@@ -20,7 +20,9 @@ class CoinlyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'Coinly',
         theme: AppTheme.lightTheme,
-        home: const _FirebaseSetupPage(),
+        home: const _AnimatedSplashGate(
+          child: _FirebaseSetupPage(),
+        ),
       );
     }
 
@@ -36,7 +38,64 @@ class CoinlyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'Coinly',
           theme: AppTheme.lightTheme,
-          home: const _AuthGate(),
+          home: const _AnimatedSplashGate(
+            child: _AuthGate(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimatedSplashGate extends StatefulWidget {
+  const _AnimatedSplashGate({
+    required this.child,
+  });
+
+  final Widget child;
+
+  @override
+  State<_AnimatedSplashGate> createState() => _AnimatedSplashGateState();
+}
+
+class _AnimatedSplashGateState extends State<_AnimatedSplashGate> {
+  bool _showSplash = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(const Duration(milliseconds: 2200), () {
+      if (mounted) {
+        setState(() => _showSplash = false);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_showSplash) {
+      return const _AnimatedSplashPage();
+    }
+
+    return widget.child;
+  }
+}
+
+class _AnimatedSplashPage extends StatelessWidget {
+  const _AnimatedSplashPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF011738),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Image.asset(
+            'assets/animate.gif',
+            width: 220,
+            fit: BoxFit.contain,
+          ),
         ),
       ),
     );
