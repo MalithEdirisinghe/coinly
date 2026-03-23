@@ -19,6 +19,8 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   String _currencyCode = SupportedCurrencies.usd.code;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
@@ -74,177 +76,279 @@ class _LoginPageState extends State<LoginPage> {
                 padding: const EdgeInsets.all(24),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              state.isLoginMode
-                                  ? 'Welcome back'
-                                  : 'Create your Coinly account',
-                              style: Theme.of(context).textTheme.headlineMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              state.isLoginMode
-                                  ? 'Log in to sync your transactions with Firebase.'
-                                  : 'Sign up to store transactions securely in Firestore.',
-                            ),
-                            const SizedBox(height: 24),
-                            if (!state.isLoginMode) ...[
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _firstNameController,
-                                      textCapitalization:
-                                          TextCapitalization.words,
-                                      decoration: const InputDecoration(
-                                        labelText: 'First name',
-                                        border: OutlineInputBorder(),
-                                      ),
-                                      validator: (value) {
-                                        if (value == null ||
-                                            value.trim().isEmpty) {
-                                          return 'Required';
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _lastNameController,
-                                      textCapitalization:
-                                          TextCapitalization.words,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Last name',
-                                        border: OutlineInputBorder(),
-                                      ),
-                                      validator: (value) {
-                                        if (value == null ||
-                                            value.trim().isEmpty) {
-                                          return 'Required';
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-                            TextFormField(
-                              controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              decoration: const InputDecoration(
-                                labelText: 'Email',
-                                border: OutlineInputBorder(),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Email is required.';
-                                }
-                                if (!value.contains('@')) {
-                                  return 'Enter a valid email.';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: true,
-                              decoration: const InputDecoration(
-                                labelText: 'Password',
-                                border: OutlineInputBorder(),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.length < 6) {
-                                  return 'Password must be at least 6 characters.';
-                                }
-                                return null;
-                              },
-                            ),
-                            if (!state.isLoginMode) ...[
-                              const SizedBox(height: 16),
-                              TextFormField(
-                                controller: _confirmPasswordController,
-                                obscureText: true,
-                                decoration: const InputDecoration(
-                                  labelText: 'Confirm password',
-                                  border: OutlineInputBorder(),
-                                ),
-                                validator: (value) {
-                                  if (value != _passwordController.text) {
-                                    return 'Passwords do not match.';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                              DropdownButtonFormField<String>(
-                                initialValue: _currencyCode,
-                                decoration: const InputDecoration(
-                                  labelText: 'Preferred currency',
-                                  border: OutlineInputBorder(),
-                                ),
-                                items: SupportedCurrencies.values
-                                    .map(
-                                      (currency) => DropdownMenuItem(
-                                        value: currency.code,
-                                        child: Text(
-                                          '${currency.code} - ${currency.label}',
-                                        ),
-                                      ),
-                                    )
-                                    .toList(growable: false),
-                                onChanged: (value) {
-                                  if (value != null) {
-                                    setState(() => _currencyCode = value);
-                                  }
-                                },
-                              ),
-                            ],
-                            const SizedBox(height: 24),
-                            FilledButton(
-                              onPressed: state.isSubmitting
-                                  ? null
-                                  : () => _submit(state),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                child: Text(
-                                  state.isSubmitting
-                                      ? 'Please wait...'
-                                      : state.isLoginMode
-                                      ? 'Log In'
-                                      : 'Create Account',
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextButton(
-                              onPressed: state.isSubmitting
-                                  ? null
-                                  : () =>
-                                        context.read<AuthCubit>().toggleMode(),
-                              child: Text(
-                                state.isLoginMode
-                                    ? 'Need an account? Sign up'
-                                    : 'Already have an account? Log in',
-                              ),
-                            ),
-                          ],
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Coinly',
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: -0.8,
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 18),
+                      Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.topCenter,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 52),
+                            child: Card(
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  72,
+                                  24,
+                                  24,
+                                ),
+                                child: Form(
+                                  key: _formKey,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      Text(
+                                        state.isLoginMode
+                                            ? 'Welcome back'
+                                            : 'Create your Coinly account',
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.headlineMedium,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        state.isLoginMode
+                                            ? 'Log in to sync your transactions with Firebase.'
+                                            : 'Sign up to store transactions securely in Firestore.',
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 24),
+                                      if (!state.isLoginMode) ...[
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: TextFormField(
+                                                controller:
+                                                    _firstNameController,
+                                                textCapitalization:
+                                                    TextCapitalization.words,
+                                                decoration:
+                                                    const InputDecoration(
+                                                      labelText: 'First name',
+                                                      border:
+                                                          OutlineInputBorder(),
+                                                    ),
+                                                validator: (value) {
+                                                  if (value == null ||
+                                                      value.trim().isEmpty) {
+                                                    return 'Required';
+                                                  }
+                                                  return null;
+                                                },
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: TextFormField(
+                                                controller: _lastNameController,
+                                                textCapitalization:
+                                                    TextCapitalization.words,
+                                                decoration:
+                                                    const InputDecoration(
+                                                      labelText: 'Last name',
+                                                      border:
+                                                          OutlineInputBorder(),
+                                                    ),
+                                                validator: (value) {
+                                                  if (value == null ||
+                                                      value.trim().isEmpty) {
+                                                    return 'Required';
+                                                  }
+                                                  return null;
+                                                },
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 16),
+                                      ],
+                                      TextFormField(
+                                        controller: _emailController,
+                                        keyboardType:
+                                            TextInputType.emailAddress,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Email',
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        validator: (value) {
+                                          if (value == null ||
+                                              value.trim().isEmpty) {
+                                            return 'Email is required.';
+                                          }
+                                          if (!value.contains('@')) {
+                                            return 'Enter a valid email.';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                      const SizedBox(height: 16),
+                                      TextFormField(
+                                        controller: _passwordController,
+                                        obscureText: _obscurePassword,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Password',
+                                          border: OutlineInputBorder(),
+                                        ).copyWith(
+                                          suffixIcon: IconButton(
+                                            onPressed: () {
+                                              setState(
+                                                () => _obscurePassword =
+                                                    !_obscurePassword,
+                                              );
+                                            },
+                                            icon: Icon(
+                                              _obscurePassword
+                                                  ? Icons.visibility_off_rounded
+                                                  : Icons.visibility_rounded,
+                                            ),
+                                          ),
+                                        ),
+                                        validator: (value) {
+                                          if (value == null ||
+                                              value.length < 6) {
+                                            return 'Password must be at least 6 characters.';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                      if (!state.isLoginMode) ...[
+                                        const SizedBox(height: 16),
+                                        TextFormField(
+                                          controller:
+                                              _confirmPasswordController,
+                                          obscureText:
+                                              _obscureConfirmPassword,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Confirm password',
+                                            border: OutlineInputBorder(),
+                                          ).copyWith(
+                                            suffixIcon: IconButton(
+                                              onPressed: () {
+                                                setState(
+                                                  () => _obscureConfirmPassword =
+                                                      !_obscureConfirmPassword,
+                                                );
+                                              },
+                                              icon: Icon(
+                                                _obscureConfirmPassword
+                                                    ? Icons
+                                                          .visibility_off_rounded
+                                                    : Icons.visibility_rounded,
+                                              ),
+                                            ),
+                                          ),
+                                          validator: (value) {
+                                            if (value !=
+                                                _passwordController.text) {
+                                              return 'Passwords do not match.';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                        const SizedBox(height: 16),
+                                        DropdownButtonFormField<String>(
+                                          initialValue: _currencyCode,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Preferred currency',
+                                            border: OutlineInputBorder(),
+                                          ),
+                                          items: SupportedCurrencies.values
+                                              .map(
+                                                (currency) =>
+                                                    DropdownMenuItem(
+                                                      value: currency.code,
+                                                      child: Text(
+                                                        '${currency.code} - ${currency.label}',
+                                                      ),
+                                                    ),
+                                              )
+                                              .toList(growable: false),
+                                          onChanged: (value) {
+                                            if (value != null) {
+                                              setState(
+                                                () => _currencyCode = value,
+                                              );
+                                            }
+                                          },
+                                        ),
+                                      ],
+                                      const SizedBox(height: 24),
+                                      FilledButton(
+                                        onPressed: state.isSubmitting
+                                            ? null
+                                            : () => _submit(state),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 14,
+                                          ),
+                                          child: Text(
+                                            state.isSubmitting
+                                                ? 'Please wait...'
+                                                : state.isLoginMode
+                                                    ? 'Log In'
+                                                    : 'Create Account',
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      TextButton(
+                                        onPressed: state.isSubmitting
+                                            ? null
+                                            : () => context
+                                                  .read<AuthCubit>()
+                                                  .toggleMode(),
+                                        child: Text(
+                                          state.isLoginMode
+                                              ? 'Need an account? Sign up'
+                                              : 'Already have an account? Log in',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            width: 104,
+                            height: 104,
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              border: Border.all(
+                                color: const Color(0xFFE2E8F0),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.08),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 12),
+                                ),
+                              ],
+                            ),
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/logo.png',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
