@@ -426,6 +426,7 @@ class _DashboardMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final themeCubit = context.read<ThemeCubit>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentPreference = context.select(
       (ThemeCubit cubit) => cubit.state.preference,
     );
@@ -515,13 +516,20 @@ class _DashboardMenu extends StatelessWidget {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: colors.primary.withValues(alpha: 0.12),
+                        color: isDark
+                            ? colors.accent.withValues(alpha: 0.16)
+                            : colors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: isDark
+                              ? colors.accent.withValues(alpha: 0.34)
+                              : colors.primary.withValues(alpha: 0.16),
+                        ),
                       ),
                       child: Text(
                         'Currency: ${user.currencyCode}',
                         style: TextStyle(
-                          color: colors.primary,
+                          color: isDark ? colors.accent : colors.primary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -605,6 +613,7 @@ class _MenuActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -617,12 +626,12 @@ class _MenuActionTile extends StatelessWidget {
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: colors.surface,
+            color: isDark ? colors.primaryLight : colors.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: colors.border),
           ),
           alignment: Alignment.center,
-          child: Icon(icon, color: colors.primary),
+          child: Icon(icon, color: isDark ? Colors.white : colors.primary),
         ),
         title: Text(
           title,
@@ -702,13 +711,28 @@ class _ThemeChoiceChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
       decoration: BoxDecoration(
-        color: isSelected ? colors.primary : Colors.transparent,
+        color: isSelected
+            ? (isDark ? colors.accentDark : colors.primary)
+            : Colors.transparent,
         borderRadius: BorderRadius.circular(14),
+        border: isSelected && isDark
+            ? Border.all(color: colors.accent.withValues(alpha: 0.4))
+            : null,
+        boxShadow: isSelected && isDark
+            ? [
+                BoxShadow(
+                  color: colors.accentDark.withValues(alpha: 0.28),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ]
+            : null,
       ),
       child: InkWell(
         onTap: onTap,
