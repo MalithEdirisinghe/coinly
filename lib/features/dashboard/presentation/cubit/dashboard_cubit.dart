@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:coinly/features/transactions/data/transactions_repository.dart';
 import 'package:coinly/features/transactions/domain/transaction_item.dart';
 import 'package:equatable/equatable.dart';
@@ -44,14 +45,17 @@ class DashboardCubit extends Cubit<DashboardState> {
               ),
             );
           },
-          onError: (_) {
-            emit(
-              state.copyWith(
-                isLoading: false,
-                errorMessage: 'Failed to load transactions from Firestore.',
+        onError: (error) {
+          emit(
+            state.copyWith(
+              isLoading: false,
+              errorMessage: _mapFirestoreError(
+                error,
+                fallback: 'Failed to load transactions from Firestore.',
               ),
-            );
-          },
+            ),
+          );
+        },
         );
   }
 
@@ -67,8 +71,15 @@ class DashboardCubit extends Cubit<DashboardState> {
         amount: amount,
         type: type,
       );
-    } catch (_) {
-      emit(state.copyWith(errorMessage: 'Could not save the transaction.'));
+    } catch (error) {
+      emit(
+        state.copyWith(
+          errorMessage: _mapFirestoreError(
+            error,
+            fallback: 'Could not save the transaction.',
+          ),
+        ),
+      );
     }
   }
 
@@ -80,5 +91,24 @@ class DashboardCubit extends Cubit<DashboardState> {
   Future<void> close() async {
     await _subscription?.cancel();
     return super.close();
+  }
+
+  String _mapFirestoreError(Object error, {required String fallback}) {
+    if (error is FirebaseException) {
+      switch (error.code) {
+        case 'permission-denied':
+          return 'Firestore rules blocked this action. Check your database rules.';
+        case 'unavailable':
+          return 'Firestore is unavailable right now. Check your internet connection.';
+        case 'not-found':
+          return 'Firestore database was not found for this project.';
+        case 'failed-precondition':
+          return error.message ?? 'Firestore is not fully configured yet.';
+        default:
+          return error.message ?? fallback;
+      }
+    }
+
+    return fallback;
   }
 }
