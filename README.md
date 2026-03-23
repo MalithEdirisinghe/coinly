@@ -1,4 +1,4 @@
-# finova
+# Coinly
 
 A new Flutter project.
 

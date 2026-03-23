@@ -1,4 +1,4 @@
-package com.example.finova
+package com.example.coinly
 
 import io.flutter.embedding.android.FlutterActivity
 
