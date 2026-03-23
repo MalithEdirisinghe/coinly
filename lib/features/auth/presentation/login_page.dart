@@ -1,3 +1,4 @@
+import 'package:coinly/core/constants/supported_currencies.dart';
 import 'package:coinly/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,6 +15,7 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  String _currencyCode = SupportedCurrencies.usd.code;
 
   @override
   void dispose() {
@@ -37,7 +39,11 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    await cubit.signUp(email: email, password: password);
+    await cubit.signUp(
+      email: email,
+      password: password,
+      currencyCode: _currencyCode,
+    );
   }
 
   @override
@@ -126,6 +132,29 @@ class _LoginPageState extends State<LoginPage> {
                                     return 'Passwords do not match.';
                                   }
                                   return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              DropdownButtonFormField<String>(
+                                initialValue: _currencyCode,
+                                decoration: const InputDecoration(
+                                  labelText: 'Preferred currency',
+                                  border: OutlineInputBorder(),
+                                ),
+                                items: SupportedCurrencies.values
+                                    .map(
+                                      (currency) => DropdownMenuItem(
+                                        value: currency.code,
+                                        child: Text(
+                                          '${currency.code} • ${currency.label}',
+                                        ),
+                                      ),
+                                    )
+                                    .toList(growable: false),
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setState(() => _currencyCode = value);
+                                  }
                                 },
                               ),
                             ],

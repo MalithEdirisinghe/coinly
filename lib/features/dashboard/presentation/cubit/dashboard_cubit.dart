@@ -45,17 +45,17 @@ class DashboardCubit extends Cubit<DashboardState> {
               ),
             );
           },
-        onError: (error) {
-          emit(
-            state.copyWith(
-              isLoading: false,
-              errorMessage: _mapFirestoreError(
-                error,
-                fallback: 'Failed to load transactions from Firestore.',
+          onError: (error) {
+            emit(
+              state.copyWith(
+                isLoading: false,
+                errorMessage: _mapFirestoreError(
+                  error,
+                  fallback: 'Failed to load transactions from Firestore.',
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
         );
   }
 

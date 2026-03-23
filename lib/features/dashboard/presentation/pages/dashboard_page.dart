@@ -14,6 +14,10 @@ class DashboardPage extends StatelessWidget {
 
   final AppUser user;
 
+  String formatAmount(double amount) {
+    return CurrencyFormatter.format(amount, currencyCode: user.currencyCode);
+  }
+
   Future<void> _showAddTransactionDialog(BuildContext context) async {
     final cubit = context.read<DashboardCubit>();
     final transaction = await showDialog<_TransactionDraft>(
@@ -119,7 +123,7 @@ class DashboardPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          CurrencyFormatter.format(state.balance),
+                          formatAmount(state.balance),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 30,
@@ -144,7 +148,7 @@ class DashboardPage extends StatelessWidget {
                       Expanded(
                         child: _SummaryCard(
                           title: 'Income',
-                          amount: CurrencyFormatter.format(state.income),
+                          amount: formatAmount(state.income),
                           color: AppColors.accent,
                         ),
                       ),
@@ -152,7 +156,7 @@ class DashboardPage extends StatelessWidget {
                       Expanded(
                         child: _SummaryCard(
                           title: 'Expense',
-                          amount: CurrencyFormatter.format(state.expense),
+                          amount: formatAmount(state.expense),
                           color: AppColors.error,
                         ),
                       ),
@@ -195,7 +199,7 @@ class DashboardPage extends StatelessWidget {
                                     ),
                                   ),
                                   trailing: Text(
-                                    '${transaction.type == TransactionType.income ? '+' : '-'}${CurrencyFormatter.format(transaction.amount)}',
+                                    '${transaction.type == TransactionType.income ? '+' : '-'}${formatAmount(transaction.amount)}',
                                     style: TextStyle(
                                       color: amountColor,
                                       fontWeight: FontWeight.w700,
