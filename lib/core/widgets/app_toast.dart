@@ -21,7 +21,7 @@ abstract final class AppToast {
       return;
     }
 
-    final palette = _ToastPalette.fromType(type);
+    final palette = _ToastPalette.fromType(type, context.appColors);
     final key = GlobalKey<_ToastMessageState>();
     _toastKey = key;
 
@@ -166,7 +166,7 @@ class _ToastMessageState extends State<_ToastMessage>
                       border: Border.all(color: widget.borderColor),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.textPrimary.withValues(alpha: 0.10),
+                          color: context.appColors.shadow,
                           blurRadius: 18,
                           offset: const Offset(0, 10),
                         ),
@@ -225,20 +225,20 @@ class _ToastPalette {
   final Color borderColor;
   final IconData icon;
 
-  factory _ToastPalette.fromType(AppToastType type) {
+  factory _ToastPalette.fromType(AppToastType type, AppThemeColors colors) {
     switch (type) {
       case AppToastType.success:
-        return const _ToastPalette(
-          backgroundColor: Color(0xFFEAF8F2),
-          foregroundColor: AppColors.accentDark,
-          borderColor: Color(0xFFBEE9D3),
+        return _ToastPalette(
+          backgroundColor: colors.successBackground,
+          foregroundColor: colors.accentDark,
+          borderColor: colors.successBorder,
           icon: Icons.check_rounded,
         );
       case AppToastType.error:
-        return const _ToastPalette(
-          backgroundColor: Color(0xFFFDEEEE),
-          foregroundColor: AppColors.error,
-          borderColor: Color(0xFFF6CACA),
+        return _ToastPalette(
+          backgroundColor: colors.errorBackground,
+          foregroundColor: colors.error,
+          borderColor: colors.errorBorder,
           icon: Icons.error_outline_rounded,
         );
     }

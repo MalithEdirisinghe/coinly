@@ -4,6 +4,8 @@ import 'package:coinly/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../app/theme/app_colors.dart';
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -69,6 +71,9 @@ class _LoginPageState extends State<LoginPage> {
         }
       },
       builder: (context, state) {
+        final colors = context.appColors;
+        final theme = Theme.of(context);
+
         return Scaffold(
           body: SafeArea(
             child: Center(
@@ -78,12 +83,12 @@ class _LoginPageState extends State<LoginPage> {
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Column(
                     children: [
-                      const Text(
+                      Text(
                         'Coinly',
                         style: TextStyle(
                           fontSize: 30,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
+                          color: colors.textPrimary,
                           letterSpacing: -0.8,
                         ),
                       ),
@@ -112,9 +117,7 @@ class _LoginPageState extends State<LoginPage> {
                                         state.isLoginMode
                                             ? 'Welcome back'
                                             : 'Create your Coinly account',
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.headlineMedium,
+                                        style: theme.textTheme.headlineMedium,
                                         textAlign: TextAlign.center,
                                       ),
                                       const SizedBox(height: 8),
@@ -197,24 +200,27 @@ class _LoginPageState extends State<LoginPage> {
                                       TextFormField(
                                         controller: _passwordController,
                                         obscureText: _obscurePassword,
-                                        decoration: const InputDecoration(
-                                          labelText: 'Password',
-                                          border: OutlineInputBorder(),
-                                        ).copyWith(
-                                          suffixIcon: IconButton(
-                                            onPressed: () {
-                                              setState(
-                                                () => _obscurePassword =
-                                                    !_obscurePassword,
-                                              );
-                                            },
-                                            icon: Icon(
-                                              _obscurePassword
-                                                  ? Icons.visibility_off_rounded
-                                                  : Icons.visibility_rounded,
+                                        decoration:
+                                            const InputDecoration(
+                                              labelText: 'Password',
+                                              border: OutlineInputBorder(),
+                                            ).copyWith(
+                                              suffixIcon: IconButton(
+                                                onPressed: () {
+                                                  setState(
+                                                    () => _obscurePassword =
+                                                        !_obscurePassword,
+                                                  );
+                                                },
+                                                icon: Icon(
+                                                  _obscurePassword
+                                                      ? Icons
+                                                            .visibility_off_rounded
+                                                      : Icons
+                                                            .visibility_rounded,
+                                                ),
+                                              ),
                                             ),
-                                          ),
-                                        ),
                                         validator: (value) {
                                           if (value == null ||
                                               value.length < 6) {
@@ -228,27 +234,28 @@ class _LoginPageState extends State<LoginPage> {
                                         TextFormField(
                                           controller:
                                               _confirmPasswordController,
-                                          obscureText:
-                                              _obscureConfirmPassword,
-                                          decoration: const InputDecoration(
-                                            labelText: 'Confirm password',
-                                            border: OutlineInputBorder(),
-                                          ).copyWith(
-                                            suffixIcon: IconButton(
-                                              onPressed: () {
-                                                setState(
-                                                  () => _obscureConfirmPassword =
-                                                      !_obscureConfirmPassword,
-                                                );
-                                              },
-                                              icon: Icon(
-                                                _obscureConfirmPassword
-                                                    ? Icons
-                                                          .visibility_off_rounded
-                                                    : Icons.visibility_rounded,
+                                          obscureText: _obscureConfirmPassword,
+                                          decoration:
+                                              const InputDecoration(
+                                                labelText: 'Confirm password',
+                                                border: OutlineInputBorder(),
+                                              ).copyWith(
+                                                suffixIcon: IconButton(
+                                                  onPressed: () {
+                                                    setState(
+                                                      () => _obscureConfirmPassword =
+                                                          !_obscureConfirmPassword,
+                                                    );
+                                                  },
+                                                  icon: Icon(
+                                                    _obscureConfirmPassword
+                                                        ? Icons
+                                                              .visibility_off_rounded
+                                                        : Icons
+                                                              .visibility_rounded,
+                                                  ),
+                                                ),
                                               ),
-                                            ),
-                                          ),
                                           validator: (value) {
                                             if (value !=
                                                 _passwordController.text) {
@@ -266,13 +273,12 @@ class _LoginPageState extends State<LoginPage> {
                                           ),
                                           items: SupportedCurrencies.values
                                               .map(
-                                                (currency) =>
-                                                    DropdownMenuItem(
-                                                      value: currency.code,
-                                                      child: Text(
-                                                        '${currency.code} - ${currency.label}',
-                                                      ),
-                                                    ),
+                                                (currency) => DropdownMenuItem(
+                                                  value: currency.code,
+                                                  child: Text(
+                                                    '${currency.code} - ${currency.label}',
+                                                  ),
+                                                ),
                                               )
                                               .toList(growable: false),
                                           onChanged: (value) {
@@ -297,8 +303,8 @@ class _LoginPageState extends State<LoginPage> {
                                             state.isSubmitting
                                                 ? 'Please wait...'
                                                 : state.isLoginMode
-                                                    ? 'Log In'
-                                                    : 'Create Account',
+                                                ? 'Log In'
+                                                : 'Create Account',
                                           ),
                                         ),
                                       ),
@@ -327,13 +333,11 @@ class _LoginPageState extends State<LoginPage> {
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white,
-                              border: Border.all(
-                                color: const Color(0xFFE2E8F0),
-                              ),
+                              color: colors.surface,
+                              border: Border.all(color: colors.border),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.08),
+                                  color: colors.shadow,
                                   blurRadius: 20,
                                   offset: const Offset(0, 12),
                                 ),

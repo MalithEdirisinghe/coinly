@@ -1,5 +1,6 @@
 import 'package:coinly/core/utils/currency_formatter.dart';
 import 'package:coinly/core/widgets/app_toast.dart';
+import 'package:coinly/app/theme/theme_cubit.dart';
 import 'package:coinly/features/auth/domain/app_user.dart';
 import 'package:coinly/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:coinly/features/transactions/domain/transaction_item.dart';
@@ -57,7 +58,9 @@ class DashboardPage extends StatelessWidget {
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+              style: FilledButton.styleFrom(
+                backgroundColor: context.appColors.error,
+              ),
               child: const Text('Delete'),
             ),
           ],
@@ -87,40 +90,47 @@ class DashboardPage extends StatelessWidget {
         endDrawer: _DashboardMenu(
           user: user,
           onSignOut: () => context.read<AuthCubit>().signOut(),
+          onOpenAddTransaction: () => _showAddTransactionDialog(context),
         ),
         bottomNavigationBar: SafeArea(
           minimum: const EdgeInsets.fromLTRB(16, 4, 16, 28),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, AppColors.primaryLight],
-              ),
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.24),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: FilledButton.icon(
-              onPressed: () => _showAddTransactionDialog(context),
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                foregroundColor: Colors.white,
-                shadowColor: Colors.transparent,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(
+          child: Builder(
+            builder: (context) {
+              final colors = context.appColors;
+              return DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [colors.primary, colors.primaryLight],
+                  ),
                   borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.primary.withValues(alpha: 0.24),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
-              ),
-              label: const Text('Add Transaction'),
-            ),
+                child: FilledButton.icon(
+                  onPressed: () => _showAddTransactionDialog(context),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: Colors.white,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  label: const Text('Add Transaction'),
+                ),
+              );
+            },
           ),
         ),
         body: BlocBuilder<DashboardCubit, DashboardState>(
           builder: (context, state) {
+            final colors = context.appColors;
             if (state.isLoading) {
               return const Center(child: CircularProgressIndicator());
             }
@@ -140,8 +150,17 @@ class DashboardPage extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: AppColors.primary,
+                        gradient: LinearGradient(
+                          colors: [colors.primary, colors.primaryLight],
+                        ),
                         borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.shadow,
+                            blurRadius: 24,
+                            offset: const Offset(0, 14),
+                          ),
+                        ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,12 +185,12 @@ class DashboardPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       'Recent Overview',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -181,7 +200,7 @@ class DashboardPage extends StatelessWidget {
                           child: _SummaryCard(
                             title: 'Income',
                             amount: formatAmount(state.income),
-                            color: AppColors.accent,
+                            color: colors.accent,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -189,18 +208,18 @@ class DashboardPage extends StatelessWidget {
                           child: _SummaryCard(
                             title: 'Expense',
                             amount: formatAmount(state.expense),
-                            color: AppColors.error,
+                            color: colors.error,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       'Recent Transactions',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -219,8 +238,8 @@ class DashboardPage extends StatelessWidget {
                                 final transaction = state.transactions[index];
                                 final amountColor =
                                     transaction.type == TransactionType.income
-                                    ? AppColors.accentDark
-                                    : AppColors.error;
+                                    ? colors.accentDark
+                                    : colors.error;
 
                                 return Dismissible(
                                   key: ValueKey(transaction.id),
@@ -243,7 +262,7 @@ class DashboardPage extends StatelessWidget {
                                   },
                                   background: Container(
                                     decoration: BoxDecoration(
-                                      color: AppColors.error,
+                                      color: colors.error,
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     alignment: Alignment.centerRight,
@@ -278,6 +297,9 @@ class DashboardPage extends StatelessWidget {
                                         DateFormat.yMMMd().add_jm().format(
                                           transaction.createdAt,
                                         ),
+                                        style: TextStyle(
+                                          color: colors.textSecondary,
+                                        ),
                                       ),
                                       trailing: Text(
                                         '${transaction.type == TransactionType.income ? '+' : '-'}${formatAmount(transaction.amount)}',
@@ -311,6 +333,8 @@ class _DashboardHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -322,8 +346,8 @@ class _DashboardHeader extends StatelessWidget {
               Text(
                 appName,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: colors.textPrimary,
                   fontSize: 30,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.2,
@@ -333,12 +357,12 @@ class _DashboardHeader extends StatelessWidget {
                 alignment: Alignment.centerRight,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: colors.surface,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: colors.border),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.textPrimary.withValues(alpha: 0.04),
+                        color: colors.shadow,
                         blurRadius: 16,
                         offset: const Offset(0, 8),
                       ),
@@ -360,7 +384,7 @@ class _DashboardHeader extends StatelessWidget {
         Text(
           'Welcome back,',
           style: TextStyle(
-            color: AppColors.textSecondary.withValues(alpha: 0.95),
+            color: colors.textSecondary.withValues(alpha: 0.95),
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
@@ -368,8 +392,8 @@ class _DashboardHeader extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           firstName,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
+          style: TextStyle(
+            color: colors.textPrimary,
             fontSize: 30,
             height: 1.05,
             fontWeight: FontWeight.w800,
@@ -381,16 +405,27 @@ class _DashboardHeader extends StatelessWidget {
 }
 
 class _DashboardMenu extends StatelessWidget {
-  const _DashboardMenu({required this.user, required this.onSignOut});
+  const _DashboardMenu({
+    required this.user,
+    required this.onSignOut,
+    required this.onOpenAddTransaction,
+  });
 
   final AppUser user;
   final VoidCallback onSignOut;
+  final VoidCallback onOpenAddTransaction;
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final themeCubit = context.read<ThemeCubit>();
+    final currentPreference = context.select(
+      (ThemeCubit cubit) => cubit.state.preference,
+    );
+
     return Drawer(
       width: 304,
-      backgroundColor: AppColors.surface,
+      backgroundColor: colors.surface,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
@@ -403,8 +438,8 @@ class _DashboardMenu extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primary, AppColors.primaryLight],
+                      gradient: LinearGradient(
+                        colors: [colors.primary, colors.primaryLight],
                       ),
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -419,11 +454,11 @@ class _DashboardMenu extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Coinly',
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: colors.textPrimary,
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                       ),
@@ -441,9 +476,9 @@ class _DashboardMenu extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: AppColors.background,
+                  color: colors.surfaceMuted,
                   borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: colors.border),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,8 +487,8 @@ class _DashboardMenu extends StatelessWidget {
                       user.fullName.isEmpty
                           ? user.displayFirstName
                           : user.fullName,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: colors.textPrimary,
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                       ),
@@ -461,8 +496,8 @@ class _DashboardMenu extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       user.email,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: colors.textSecondary,
                         fontSize: 13,
                       ),
                     ),
@@ -473,13 +508,13 @@ class _DashboardMenu extends StatelessWidget {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.08),
+                        color: colors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
                         'Currency: ${user.currencyCode}',
-                        style: const TextStyle(
-                          color: AppColors.primary,
+                        style: TextStyle(
+                          color: colors.primary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -488,10 +523,24 @@ class _DashboardMenu extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
+                'Appearance',
+                style: TextStyle(
+                  color: colors.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _ThemeModeSelector(
+                currentPreference: currentPreference,
+                onChanged: themeCubit.setTheme,
+              ),
+              const SizedBox(height: 20),
+              Text(
                 'Quick actions',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: colors.textSecondary,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
@@ -503,9 +552,9 @@ class _DashboardMenu extends StatelessWidget {
                 subtitle: 'Open the quick add form',
                 onTap: () {
                   Navigator.of(context).pop();
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _openAddTransaction(context);
-                  });
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => onOpenAddTransaction(),
+                  );
                 },
               ),
               _MenuActionTile(
@@ -521,7 +570,7 @@ class _DashboardMenu extends StatelessWidget {
               Text(
                 'Track spending with clarity.',
                 style: TextStyle(
-                  color: AppColors.textSecondary.withValues(alpha: 0.92),
+                  color: colors.textSecondary.withValues(alpha: 0.92),
                   fontSize: 13,
                 ),
               ),
@@ -530,14 +579,6 @@ class _DashboardMenu extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Future<void> _openAddTransaction(BuildContext context) async {
-    final page = context.findAncestorWidgetOfExactType<DashboardPage>();
-    if (page == null) {
-      return;
-    }
-    await page._showAddTransactionDialog(context);
   }
 }
 
@@ -556,10 +597,12 @@ class _MenuActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: ListTile(
-        tileColor: AppColors.background,
+        tileColor: colors.surfaceMuted,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         onTap: onTap,
@@ -567,27 +610,112 @@ class _MenuActionTile extends StatelessWidget {
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: colors.surface,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: colors.border),
           ),
           alignment: Alignment.center,
-          child: Icon(icon, color: AppColors.primary),
+          child: Icon(icon, color: colors.primary),
         ),
         title: Text(
           title,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
+          style: TextStyle(
+            color: colors.textPrimary,
             fontWeight: FontWeight.w700,
           ),
         ),
         subtitle: Text(
           subtitle,
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          style: TextStyle(color: colors.textSecondary, fontSize: 13),
         ),
-        trailing: const Icon(
+        trailing: Icon(
           Icons.chevron_right_rounded,
-          color: AppColors.textSecondary,
+          color: colors.textSecondary,
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeModeSelector extends StatelessWidget {
+  const _ThemeModeSelector({
+    required this.currentPreference,
+    required this.onChanged,
+  });
+
+  final AppThemePreference currentPreference;
+  final ValueChanged<AppThemePreference> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: colors.surfaceMuted,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.border),
+      ),
+      child: Row(
+        children: [
+          for (final option in AppThemePreference.values)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: _ThemeChoiceChip(
+                  label: switch (option) {
+                    AppThemePreference.system => 'System',
+                    AppThemePreference.light => 'Light',
+                    AppThemePreference.dark => 'Dark',
+                  },
+                  isSelected: option == currentPreference,
+                  onTap: () => onChanged(option),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThemeChoiceChip extends StatelessWidget {
+  const _ThemeChoiceChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      decoration: BoxDecoration(
+        color: isSelected ? colors.primary : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isSelected ? Colors.white : colors.textSecondary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
       ),
     );
@@ -607,6 +735,8 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -621,16 +751,13 @@ class _SummaryCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               title,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: colors.textSecondary, fontSize: 14),
             ),
             const SizedBox(height: 6),
             Text(
               amount,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: colors.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -689,13 +816,14 @@ class _AddTransactionComposerState extends State<_AddTransactionComposer> {
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
+    final colors = context.appColors;
     final viewInsets = mediaQuery.viewInsets.bottom;
     final suggestions = _type == TransactionType.income
         ? _incomeSuggestions
         : _expenseSuggestions;
     final accent = _type == TransactionType.income
-        ? AppColors.accentDark
-        : AppColors.error;
+        ? colors.accentDark
+        : colors.error;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -722,14 +850,14 @@ class _AddTransactionComposerState extends State<_AddTransactionComposer> {
                 ),
               ),
               child: Material(
-                color: AppColors.surface,
+                color: colors.surface,
                 borderRadius: BorderRadius.circular(30),
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(30),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.textPrimary.withValues(alpha: 0.10),
+                        color: colors.shadow,
                         blurRadius: 36,
                         offset: const Offset(0, 18),
                       ),
@@ -748,7 +876,7 @@ class _AddTransactionComposerState extends State<_AddTransactionComposer> {
                               width: 44,
                               height: 5,
                               decoration: BoxDecoration(
-                                color: AppColors.border,
+                                color: colors.border,
                                 borderRadius: BorderRadius.circular(999),
                               ),
                             ),
@@ -760,20 +888,21 @@ class _AddTransactionComposerState extends State<_AddTransactionComposer> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'New transaction',
                                       style: TextStyle(
                                         fontSize: 24,
                                         fontWeight: FontWeight.w800,
-                                        color: AppColors.textPrimary,
+                                        color: colors.textPrimary,
                                       ),
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
                                       'Track money movement with a clean record.',
                                       style: TextStyle(
-                                        color: AppColors.textSecondary
-                                            .withValues(alpha: 0.95),
+                                        color: colors.textSecondary.withValues(
+                                          alpha: 0.95,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -800,9 +929,9 @@ class _AddTransactionComposerState extends State<_AddTransactionComposer> {
                           Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: AppColors.background,
+                              color: colors.surfaceMuted,
                               borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: AppColors.border),
+                              border: Border.all(color: colors.border),
                             ),
                             child: Row(
                               children: [
@@ -812,7 +941,7 @@ class _AddTransactionComposerState extends State<_AddTransactionComposer> {
                                     icon: Icons.arrow_upward_rounded,
                                     isSelected:
                                         _type == TransactionType.expense,
-                                    selectedColor: AppColors.error,
+                                    selectedColor: colors.error,
                                     onTap: () => setState(
                                       () => _type = TransactionType.expense,
                                     ),
@@ -823,7 +952,7 @@ class _AddTransactionComposerState extends State<_AddTransactionComposer> {
                                     label: 'Income',
                                     icon: Icons.arrow_downward_rounded,
                                     isSelected: _type == TransactionType.income,
-                                    selectedColor: AppColors.accentDark,
+                                    selectedColor: colors.accentDark,
                                     onTap: () => setState(
                                       () => _type = TransactionType.income,
                                     ),
@@ -872,7 +1001,7 @@ class _AddTransactionComposerState extends State<_AddTransactionComposer> {
                             'Quick picks',
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              color: AppColors.textSecondary.withValues(
+                              color: colors.textSecondary.withValues(
                                 alpha: 0.95,
                               ),
                             ),
@@ -900,9 +1029,9 @@ class _AddTransactionComposerState extends State<_AddTransactionComposer> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppColors.background,
+                              color: colors.surfaceMuted,
                               borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: AppColors.border),
+                              border: Border.all(color: colors.border),
                             ),
                             child: Row(
                               children: [
@@ -924,8 +1053,8 @@ class _AddTransactionComposerState extends State<_AddTransactionComposer> {
                                     _type == TransactionType.income
                                         ? 'Income entries increase your available balance.'
                                         : 'Expense entries reduce your available balance.',
-                                    style: const TextStyle(
-                                      color: AppColors.textSecondary,
+                                    style: TextStyle(
+                                      color: colors.textSecondary,
                                     ),
                                   ),
                                 ),
@@ -1020,6 +1149,8 @@ class _TypeChoiceButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
@@ -1038,13 +1169,13 @@ class _TypeChoiceButton extends StatelessWidget {
               Icon(
                 icon,
                 size: 18,
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+                color: isSelected ? Colors.white : colors.textSecondary,
               ),
               const SizedBox(width: 8),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : AppColors.textPrimary,
+                  color: isSelected ? Colors.white : colors.textPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
