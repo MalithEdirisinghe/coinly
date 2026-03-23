@@ -20,7 +20,13 @@ class AuthRepository {
       return null;
     }
 
-    return AppUser(id: user.uid, email: user.email ?? '', currencyCode: 'USD');
+    return AppUser(
+      id: user.uid,
+      email: user.email ?? '',
+      currencyCode: 'USD',
+      firstName: '',
+      lastName: '',
+    );
   }
 
   Future<void> signIn({required String email, required String password}) {
@@ -34,6 +40,8 @@ class AuthRepository {
     required String email,
     required String password,
     required String currencyCode,
+    required String firstName,
+    required String lastName,
   }) async {
     final credential = await _firebaseAuth.createUserWithEmailAndPassword(
       email: email,
@@ -43,6 +51,8 @@ class AuthRepository {
     await _users.doc(credential.user!.uid).set({
       'email': email,
       'currencyCode': currencyCode,
+      'firstName': firstName.trim(),
+      'lastName': lastName.trim(),
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
@@ -64,12 +74,16 @@ class AuthRepository {
         id: user.uid,
         email: user.email ?? data?['email'] as String? ?? '',
         currencyCode: data?['currencyCode'] as String? ?? 'USD',
+        firstName: data?['firstName'] as String? ?? '',
+        lastName: data?['lastName'] as String? ?? '',
       );
     } on FirebaseException {
       return AppUser(
         id: user.uid,
         email: user.email ?? '',
         currencyCode: 'USD',
+        firstName: '',
+        lastName: '',
       );
     }
   }

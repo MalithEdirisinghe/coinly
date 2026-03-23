@@ -44,6 +44,8 @@ class AuthCubit extends Cubit<AuthState> {
     required String email,
     required String password,
     required String currencyCode,
+    required String firstName,
+    required String lastName,
   }) async {
     emit(state.copyWith(isSubmitting: true, errorMessage: null));
 
@@ -52,6 +54,8 @@ class AuthCubit extends Cubit<AuthState> {
         email: email,
         password: password,
         currencyCode: currencyCode,
+        firstName: firstName,
+        lastName: lastName,
       );
       emit(state.copyWith(isSubmitting: false));
     } on FirebaseAuthException catch (error) {

@@ -137,8 +137,21 @@ class DashboardPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    user.email,
-                    style: const TextStyle(color: AppColors.textSecondary),
+                    'Welcome back,',
+                    style: TextStyle(
+                      color: AppColors.textSecondary.withValues(alpha: 0.95),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    user.displayFirstName,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Container(

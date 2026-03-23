@@ -13,6 +13,8 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -20,6 +22,8 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -44,6 +48,8 @@ class _LoginPageState extends State<LoginPage> {
       email: email,
       password: password,
       currencyCode: _currencyCode,
+      firstName: _firstNameController.text.trim(),
+      lastName: _lastNameController.text.trim(),
     );
   }
 
@@ -89,6 +95,50 @@ class _LoginPageState extends State<LoginPage> {
                                   : 'Sign up to store transactions securely in Firestore.',
                             ),
                             const SizedBox(height: 24),
+                            if (!state.isLoginMode) ...[
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _firstNameController,
+                                      textCapitalization:
+                                          TextCapitalization.words,
+                                      decoration: const InputDecoration(
+                                        labelText: 'First name',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                      validator: (value) {
+                                        if (value == null ||
+                                            value.trim().isEmpty) {
+                                          return 'Required';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _lastNameController,
+                                      textCapitalization:
+                                          TextCapitalization.words,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Last name',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                      validator: (value) {
+                                        if (value == null ||
+                                            value.trim().isEmpty) {
+                                          return 'Required';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                            ],
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
@@ -149,7 +199,7 @@ class _LoginPageState extends State<LoginPage> {
                                       (currency) => DropdownMenuItem(
                                         value: currency.code,
                                         child: Text(
-                                          '${currency.code} • ${currency.label}',
+                                          '${currency.code} - ${currency.label}',
                                         ),
                                       ),
                                     )
