@@ -84,15 +84,9 @@ class DashboardPage extends StatelessWidget {
       },
       child: Scaffold(
         resizeToAvoidBottomInset: false,
-        appBar: AppBar(
-          title: const Text('Coinly'),
-          actions: [
-            IconButton(
-              onPressed: () => context.read<AuthCubit>().signOut(),
-              icon: const Icon(Icons.logout),
-              tooltip: 'Log out',
-            ),
-          ],
+        endDrawer: _DashboardMenu(
+          user: user,
+          onSignOut: () => context.read<AuthCubit>().signOut(),
         ),
         bottomNavigationBar: SafeArea(
           minimum: const EdgeInsets.fromLTRB(16, 4, 16, 28),
@@ -131,183 +125,469 @@ class DashboardPage extends StatelessWidget {
               return const Center(child: CircularProgressIndicator());
             }
 
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Welcome back,',
-                    style: TextStyle(
-                      color: AppColors.textSecondary.withValues(alpha: 0.95),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _DashboardHeader(
+                      appName: 'Coinly',
+                      firstName: user.displayFirstName,
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    user.displayFirstName,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
+                    const SizedBox(height: 20),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Total Balance',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            formatAmount(state.balance),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(24),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Recent Overview',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 12),
+                    Row(
                       children: [
-                        const Text(
-                          'Total Balance',
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
+                        Expanded(
+                          child: _SummaryCard(
+                            title: 'Income',
+                            amount: formatAmount(state.income),
+                            color: AppColors.accent,
+                          ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          formatAmount(state.balance),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 30,
-                            fontWeight: FontWeight.bold,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _SummaryCard(
+                            title: 'Expense',
+                            amount: formatAmount(state.expense),
+                            color: AppColors.error,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Recent Overview',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _SummaryCard(
-                          title: 'Income',
-                          amount: formatAmount(state.income),
-                          color: AppColors.accent,
-                        ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Recent Transactions',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _SummaryCard(
-                          title: 'Expense',
-                          amount: formatAmount(state.expense),
-                          color: AppColors.error,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Recent Transactions',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: state.transactions.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'No transactions yet. Add your first one.',
-                            ),
-                          )
-                        : ListView.separated(
-                            itemCount: state.transactions.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              final transaction = state.transactions[index];
-                              final amountColor =
-                                  transaction.type == TransactionType.income
-                                  ? AppColors.accentDark
-                                  : AppColors.error;
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: state.transactions.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No transactions yet. Add your first one.',
+                              ),
+                            )
+                          : ListView.separated(
+                              itemCount: state.transactions.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 12),
+                              itemBuilder: (context, index) {
+                                final transaction = state.transactions[index];
+                                final amountColor =
+                                    transaction.type == TransactionType.income
+                                    ? AppColors.accentDark
+                                    : AppColors.error;
 
-                              return Dismissible(
-                                key: ValueKey(transaction.id),
-                                direction: DismissDirection.endToStart,
-                                confirmDismiss: (_) =>
-                                    _confirmDeleteTransaction(
-                                      context,
-                                      transaction,
-                                    ),
-                                onDismissed: (_) {
-                                  context
-                                      .read<DashboardCubit>()
-                                      .deleteTransaction(transaction.id);
-                                  AppToast.show(
-                                    context,
-                                    message: '"${transaction.title}" deleted.',
-                                    type: AppToastType.success,
-                                  );
-                                },
-                                background: Container(
-                                  decoration: BoxDecoration(
-                                    color: AppColors.error,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  alignment: Alignment.centerRight,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                  ),
-                                  child: const Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Icon(
-                                        Icons.delete_outline_rounded,
-                                        color: Colors.white,
+                                return Dismissible(
+                                  key: ValueKey(transaction.id),
+                                  direction: DismissDirection.endToStart,
+                                  confirmDismiss: (_) =>
+                                      _confirmDeleteTransaction(
+                                        context,
+                                        transaction,
                                       ),
-                                      SizedBox(height: 6),
-                                      Text(
-                                        'Delete',
-                                        style: TextStyle(
+                                  onDismissed: (_) {
+                                    context
+                                        .read<DashboardCubit>()
+                                        .deleteTransaction(transaction.id);
+                                    AppToast.show(
+                                      context,
+                                      message:
+                                          '"${transaction.title}" deleted.',
+                                      type: AppToastType.success,
+                                    );
+                                  },
+                                  background: Container(
+                                    decoration: BoxDecoration(
+                                      color: AppColors.error,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    alignment: Alignment.centerRight,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                    ),
+                                    child: const Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Icon(
+                                          Icons.delete_outline_rounded,
                                           color: Colors.white,
+                                        ),
+                                        SizedBox(height: 6),
+                                        Text(
+                                          'Delete',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  child: Card(
+                                    child: ListTile(
+                                      title: Text(transaction.title),
+                                      subtitle: Text(
+                                        DateFormat.yMMMd().add_jm().format(
+                                          transaction.createdAt,
+                                        ),
+                                      ),
+                                      trailing: Text(
+                                        '${transaction.type == TransactionType.income ? '+' : '-'}${formatAmount(transaction.amount)}',
+                                        style: TextStyle(
+                                          color: amountColor,
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                ),
-                                child: Card(
-                                  child: ListTile(
-                                    title: Text(transaction.title),
-                                    subtitle: Text(
-                                      DateFormat.yMMMd().add_jm().format(
-                                        transaction.createdAt,
-                                      ),
-                                    ),
-                                    trailing: Text(
-                                      '${transaction.type == TransactionType.income ? '+' : '-'}${formatAmount(transaction.amount)}',
-                                      style: TextStyle(
-                                        color: amountColor,
-                                        fontWeight: FontWeight.w700,
-                                      ),
                                     ),
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                ],
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardHeader extends StatelessWidget {
+  const _DashboardHeader({required this.appName, required this.firstName});
+
+  final String appName;
+  final String firstName;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 48,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Text(
+                appName,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: AppColors.border),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.textPrimary.withValues(alpha: 0.04),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Builder(
+                    builder: (context) => IconButton(
+                      onPressed: () => Scaffold.of(context).openEndDrawer(),
+                      icon: const Icon(Icons.menu_rounded),
+                      tooltip: 'Menu',
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        Text(
+          'Welcome back,',
+          style: TextStyle(
+            color: AppColors.textSecondary.withValues(alpha: 0.95),
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          firstName,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 30,
+            height: 1.05,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DashboardMenu extends StatelessWidget {
+  const _DashboardMenu({required this.user, required this.onSignOut});
+
+  final AppUser user;
+  final VoidCallback onSignOut;
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      width: 304,
+      backgroundColor: AppColors.surface,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppColors.primary, AppColors.primaryLight],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      'C',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Coinly',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                    tooltip: 'Close menu',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.fullName.isEmpty
+                          ? user.displayFirstName
+                          : user.fullName,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      user.email,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        'Currency: ${user.currencyCode}',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Quick actions',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _MenuActionTile(
+                icon: Icons.add_card_rounded,
+                title: 'Add transaction',
+                subtitle: 'Open the quick add form',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _openAddTransaction(context);
+                  });
+                },
+              ),
+              _MenuActionTile(
+                icon: Icons.logout_rounded,
+                title: 'Log out',
+                subtitle: 'Sign out from this account',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onSignOut();
+                },
+              ),
+              const Spacer(),
+              Text(
+                'Track spending with clarity.',
+                style: TextStyle(
+                  color: AppColors.textSecondary.withValues(alpha: 0.92),
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openAddTransaction(BuildContext context) async {
+    final page = context.findAncestorWidgetOfExactType<DashboardPage>();
+    if (page == null) {
+      return;
+    }
+    await page._showAddTransactionDialog(context);
+  }
+}
+
+class _MenuActionTile extends StatelessWidget {
+  const _MenuActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        tileColor: AppColors.background,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        onTap: onTap,
+        leading: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border),
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, color: AppColors.primary),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+        ),
+        trailing: const Icon(
+          Icons.chevron_right_rounded,
+          color: AppColors.textSecondary,
         ),
       ),
     );
