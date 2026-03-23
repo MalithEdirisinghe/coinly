@@ -3,6 +3,7 @@ import 'package:coinly/core/widgets/app_toast.dart';
 import 'package:coinly/app/theme/theme_cubit.dart';
 import 'package:coinly/features/auth/domain/app_user.dart';
 import 'package:coinly/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:coinly/features/transactions/presentation/transactions_page.dart';
 import 'package:coinly/features/transactions/domain/transaction_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,6 +13,8 @@ import '../../../../app/theme/app_colors.dart';
 import '../cubit/dashboard_cubit.dart';
 
 class DashboardPage extends StatelessWidget {
+  static const int _recentTransactionsLimit = 5;
+
   const DashboardPage({super.key, required this.user});
 
   final AppUser user;
@@ -72,6 +75,17 @@ class DashboardPage extends StatelessWidget {
     );
 
     return result ?? false;
+  }
+
+  Future<void> _openTransactionsPage(BuildContext context) {
+    return Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: context.read<DashboardCubit>(),
+          child: TransactionsPage(user: user),
+        ),
+      ),
+    );
   }
 
   @override
@@ -138,6 +152,10 @@ class DashboardPage extends StatelessWidget {
         body: BlocBuilder<DashboardCubit, DashboardState>(
           builder: (context, state) {
             final colors = context.appColors;
+            final recentTransactions = state.transactions
+                .take(_recentTransactionsLimit)
+                .toList(growable: false);
+
             if (state.isLoading) {
               return const Center(child: CircularProgressIndicator());
             }
@@ -221,13 +239,47 @@ class DashboardPage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    Text(
-                      'Recent Transactions',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: colors.textPrimary,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Recent Transactions',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        if (state.transactions.length >
+                            _recentTransactionsLimit)
+                          OutlinedButton.icon(
+                            onPressed: () => _openTransactionsPage(context),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? colors.accent
+                                  : colors.primary,
+                              side: BorderSide(
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? colors.accent.withValues(alpha: 0.45)
+                                    : colors.primary.withValues(alpha: 0.18),
+                              ),
+                              backgroundColor:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? colors.accent.withValues(alpha: 0.08)
+                                  : colors.primary.withValues(alpha: 0.05),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                            ),
+                            icon: const Icon(Icons.east_rounded, size: 16),
+                            label: const Text('See all'),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     Expanded(
@@ -238,11 +290,11 @@ class DashboardPage extends StatelessWidget {
                               ),
                             )
                           : ListView.separated(
-                              itemCount: state.transactions.length,
+                              itemCount: recentTransactions.length,
                               separatorBuilder: (_, __) =>
                                   const SizedBox(height: 12),
                               itemBuilder: (context, index) {
-                                final transaction = state.transactions[index];
+                                final transaction = recentTransactions[index];
                                 final amountColor =
                                     transaction.type == TransactionType.income
                                     ? colors.accentDark
