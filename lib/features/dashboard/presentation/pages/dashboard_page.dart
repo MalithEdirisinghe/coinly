@@ -54,6 +54,9 @@ class DashboardPage extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
+              style: TextButton.styleFrom(
+                foregroundColor: context.appColors.textPrimary,
+              ),
               child: const Text('Cancel'),
             ),
             FilledButton(
@@ -97,15 +100,19 @@ class DashboardPage extends StatelessWidget {
           child: Builder(
             builder: (context) {
               final colors = context.appColors;
+              final isDark = Theme.of(context).brightness == Brightness.dark;
               return DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [colors.primary, colors.primaryLight],
+                    colors: isDark
+                        ? [colors.accentDark, colors.accent]
+                        : [colors.primary, colors.primaryLight],
                   ),
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: [
                     BoxShadow(
-                      color: colors.primary.withValues(alpha: 0.24),
+                      color: (isDark ? colors.accentDark : colors.primary)
+                          .withValues(alpha: 0.28),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),

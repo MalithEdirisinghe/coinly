@@ -315,6 +315,9 @@ class _LoginPageState extends State<LoginPage> {
                                             : () => context
                                                   .read<AuthCubit>()
                                                   .toggleMode(),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: colors.textPrimary,
+                                        ),
                                         child: Text(
                                           state.isLoginMode
                                               ? 'Need an account? Sign up'

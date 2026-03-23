@@ -115,8 +115,14 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: colors.primary,
+          backgroundColor: isDark ? colors.accentDark : colors.primary,
           foregroundColor: Colors.white,
+          elevation: isDark ? 2 : 0,
+          shadowColor: colors.shadow,
+          surfaceTintColor: Colors.transparent,
+          side: isDark
+              ? BorderSide(color: colors.accent.withValues(alpha: 0.4))
+              : BorderSide.none,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
