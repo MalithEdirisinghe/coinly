@@ -35,6 +35,13 @@ class TransactionsRepository {
     return _transactionsRef(userId).add(transaction.toMap());
   }
 
+  Future<void> deleteTransaction({
+    required String userId,
+    required String transactionId,
+  }) {
+    return _transactionsRef(userId).doc(transactionId).delete();
+  }
+
   CollectionReference<Map<String, dynamic>> _transactionsRef(String userId) {
     return _firestore
         .collection('users')

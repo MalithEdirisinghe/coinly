@@ -1,4 +1,5 @@
 import 'package:coinly/core/utils/currency_formatter.dart';
+import 'package:coinly/core/widgets/app_toast.dart';
 import 'package:coinly/features/auth/domain/app_user.dart';
 import 'package:coinly/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:coinly/features/transactions/domain/transaction_item.dart';
@@ -37,6 +38,36 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
+  Future<bool> _confirmDeleteTransaction(
+    BuildContext context,
+    TransactionItem transaction,
+  ) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete transaction?'),
+          content: Text(
+            'Remove "${transaction.title}" from your transaction history?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<DashboardCubit, DashboardState>(
@@ -44,9 +75,11 @@ class DashboardPage extends StatelessWidget {
           previous.errorMessage != current.errorMessage &&
           current.errorMessage != null,
       listener: (context, state) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+        AppToast.show(
+          context,
+          message: state.errorMessage!,
+          type: AppToastType.error,
+        );
         context.read<DashboardCubit>().clearError();
       },
       child: Scaffold(
@@ -191,19 +224,66 @@ class DashboardPage extends StatelessWidget {
                                   ? AppColors.accentDark
                                   : AppColors.error;
 
-                              return Card(
-                                child: ListTile(
-                                  title: Text(transaction.title),
-                                  subtitle: Text(
-                                    DateFormat.yMMMd().add_jm().format(
-                                      transaction.createdAt,
+                              return Dismissible(
+                                key: ValueKey(transaction.id),
+                                direction: DismissDirection.endToStart,
+                                confirmDismiss: (_) =>
+                                    _confirmDeleteTransaction(
+                                      context,
+                                      transaction,
                                     ),
+                                onDismissed: (_) {
+                                  context
+                                      .read<DashboardCubit>()
+                                      .deleteTransaction(transaction.id);
+                                  AppToast.show(
+                                    context,
+                                    message: '"${transaction.title}" deleted.',
+                                    type: AppToastType.success,
+                                  );
+                                },
+                                background: Container(
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error,
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
-                                  trailing: Text(
-                                    '${transaction.type == TransactionType.income ? '+' : '-'}${formatAmount(transaction.amount)}',
-                                    style: TextStyle(
-                                      color: amountColor,
-                                      fontWeight: FontWeight.w700,
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
+                                  child: const Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Icon(
+                                        Icons.delete_outline_rounded,
+                                        color: Colors.white,
+                                      ),
+                                      SizedBox(height: 6),
+                                      Text(
+                                        'Delete',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                child: Card(
+                                  child: ListTile(
+                                    title: Text(transaction.title),
+                                    subtitle: Text(
+                                      DateFormat.yMMMd().add_jm().format(
+                                        transaction.createdAt,
+                                      ),
+                                    ),
+                                    trailing: Text(
+                                      '${transaction.type == TransactionType.income ? '+' : '-'}${formatAmount(transaction.amount)}',
+                                      style: TextStyle(
+                                        color: amountColor,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -481,11 +561,11 @@ class _AddTransactionComposerState extends State<_AddTransactionComposer> {
                             keyboardType: const TextInputType.numberWithOptions(
                               decimal: true,
                             ),
-                          decoration: const InputDecoration(
-                            labelText: 'Amount',
-                            hintText: '0.00',
-                            prefixIcon: Icon(Icons.payments_outlined),
-                          ),
+                            decoration: const InputDecoration(
+                              labelText: 'Amount',
+                              hintText: '0.00',
+                              prefixIcon: Icon(Icons.payments_outlined),
+                            ),
                             validator: (value) {
                               final amount = double.tryParse(value ?? '');
                               if (amount == null || amount <= 0) {

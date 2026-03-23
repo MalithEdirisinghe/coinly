@@ -1,4 +1,5 @@
 import 'package:coinly/core/constants/supported_currencies.dart';
+import 'package:coinly/core/widgets/app_toast.dart';
 import 'package:coinly/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -51,9 +52,11 @@ class _LoginPageState extends State<LoginPage> {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state.errorMessage != null) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+          AppToast.show(
+            context,
+            message: state.errorMessage!,
+            type: AppToastType.error,
+          );
           context.read<AuthCubit>().clearError();
         }
       },

@@ -83,6 +83,24 @@ class DashboardCubit extends Cubit<DashboardState> {
     }
   }
 
+  Future<void> deleteTransaction(String transactionId) async {
+    try {
+      await _transactionsRepository.deleteTransaction(
+        userId: _userId,
+        transactionId: transactionId,
+      );
+    } catch (error) {
+      emit(
+        state.copyWith(
+          errorMessage: _mapFirestoreError(
+            error,
+            fallback: 'Could not delete the transaction.',
+          ),
+        ),
+      );
+    }
+  }
+
   void clearError() {
     emit(state.copyWith(clearError: true));
   }
