@@ -103,6 +103,9 @@ class _FakeTransactionsRepository implements TransactionsRepository {
     required String title,
     required double amount,
     required TransactionType type,
+    required String categoryId,
+    required String categoryLabel,
+    required String categoryIconKey,
   }) async {}
 
   @override

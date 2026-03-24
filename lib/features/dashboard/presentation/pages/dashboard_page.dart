@@ -1,9 +1,14 @@
 import 'package:coinly/core/utils/currency_formatter.dart';
+import 'package:coinly/core/constants/transaction_categories.dart';
 import 'package:coinly/core/widgets/app_top_app_bar.dart';
 import 'package:coinly/core/widgets/app_toast.dart';
+import 'package:coinly/core/widgets/app_confirm_dialog.dart';
+import 'package:coinly/core/widgets/transaction_category_avatar.dart';
 import 'package:coinly/app/theme/theme_cubit.dart';
 import 'package:coinly/features/auth/domain/app_user.dart';
 import 'package:coinly/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:coinly/features/categories/data/categories_repository.dart';
+import 'package:coinly/features/categories/presentation/categories_page.dart';
 import 'package:coinly/features/transactions/presentation/transactions_page.dart';
 import 'package:coinly/features/transactions/domain/transaction_item.dart';
 import 'package:flutter/material.dart';
@@ -29,7 +34,7 @@ class DashboardPage extends StatelessWidget {
     final transaction = await showDialog<_TransactionDraft>(
       context: context,
       barrierDismissible: true,
-      builder: (_) => const _AddTransactionComposer(),
+      builder: (_) => _AddTransactionComposer(userId: user.id),
     );
 
     if (transaction == null || !context.mounted) {
@@ -40,6 +45,9 @@ class DashboardPage extends StatelessWidget {
       title: transaction.title,
       amount: transaction.amount,
       type: transaction.type,
+      categoryId: transaction.categoryId,
+      categoryLabel: transaction.categoryLabel,
+      categoryIconKey: transaction.categoryIconKey,
     );
   }
 
@@ -47,35 +55,11 @@ class DashboardPage extends StatelessWidget {
     BuildContext context,
     TransactionItem transaction,
   ) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Delete transaction?'),
-          content: Text(
-            'Remove "${transaction.title}" from your transaction history?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              style: TextButton.styleFrom(
-                foregroundColor: context.appColors.textPrimary,
-              ),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: FilledButton.styleFrom(
-                backgroundColor: context.appColors.error,
-              ),
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
+    return AppConfirmDialog.show(
+      context,
+      title: 'Delete transaction?',
+      message: 'Remove "${transaction.title}" from your transaction history?',
     );
-
-    return result ?? false;
   }
 
   Future<void> _openTransactionsPage(BuildContext context) {
@@ -93,6 +77,12 @@ class DashboardPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _openCategoriesPage(BuildContext context) {
+    return Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => CategoriesPage(user: user)));
   }
 
   @override
@@ -115,6 +105,7 @@ class DashboardPage extends StatelessWidget {
           user: user,
           onSignOut: () => context.read<AuthCubit>().signOut(),
           onOpenAddTransaction: () => _showAddTransactionDialog(context),
+          onOpenManageCategories: () => _openCategoriesPage(context),
         ),
         bottomNavigationBar: SafeArea(
           minimum: const EdgeInsets.fromLTRB(16, 4, 16, 28),
@@ -334,11 +325,15 @@ class DashboardPage extends StatelessWidget {
                             ),
                             child: Card(
                               child: ListTile(
+                                leading: TransactionCategoryAvatar(
+                                  type: transaction.type,
+                                  categoryId: transaction.categoryId,
+                                  categoryLabel: transaction.categoryLabel,
+                                  categoryIconKey: transaction.categoryIconKey,
+                                ),
                                 title: Text(transaction.title),
                                 subtitle: Text(
-                                  DateFormat.yMMMd().add_jm().format(
-                                    transaction.createdAt,
-                                  ),
+                                  '${TransactionCategories.labelForTransaction(transaction)} - ${DateFormat.yMMMd().add_jm().format(transaction.createdAt)}',
                                   style: TextStyle(color: colors.textSecondary),
                                 ),
                                 trailing: Text(
@@ -448,11 +443,13 @@ class _DashboardMenu extends StatelessWidget {
     required this.user,
     required this.onSignOut,
     required this.onOpenAddTransaction,
+    required this.onOpenManageCategories,
   });
 
   final AppUser user;
   final VoidCallback onSignOut;
   final VoidCallback onOpenAddTransaction;
+  final VoidCallback onOpenManageCategories;
 
   @override
   Widget build(BuildContext context) {
@@ -604,6 +601,19 @@ class _DashboardMenu extends StatelessWidget {
                   );
                 },
               ),
+              const SizedBox(height: 12),
+              _MenuActionTile(
+                icon: Icons.category_outlined,
+                title: 'Manage categories',
+                subtitle: 'Add, edit, and delete custom categories',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => onOpenManageCategories(),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
               _MenuActionTile(
                 icon: Icons.logout_rounded,
                 title: 'Log out',
@@ -1058,7 +1068,9 @@ class _ExpenseTrackingSection extends StatelessWidget {
           _PeriodToggle(
             selectedPeriod: selectedPeriod,
             onChanged: onPeriodChanged,
-            selectedBackgroundColor: isDark ? colors.accentDark : colors.primary,
+            selectedBackgroundColor: isDark
+                ? colors.accentDark
+                : colors.primary,
             selectedForegroundColor: Colors.white,
             unselectedForegroundColor: colors.textSecondary,
             backgroundColor: isDark ? colors.primaryLight : colors.surfaceMuted,
@@ -1199,14 +1211,12 @@ class _TrackedExpenseRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: colors.error.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(Icons.arrow_upward_rounded, color: colors.error),
+          TransactionCategoryAvatar(
+            type: transaction.type,
+            categoryId: transaction.categoryId,
+            categoryIconKey: transaction.categoryIconKey,
+            size: 40,
+            iconSize: 18,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1222,7 +1232,7 @@ class _TrackedExpenseRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  DateFormat.MMMd().add_jm().format(transaction.createdAt),
+                  '${TransactionCategories.labelForTransaction(transaction)} - ${DateFormat.MMMd().add_jm().format(transaction.createdAt)}',
                   style: TextStyle(color: colors.textSecondary, fontSize: 13),
                 ),
               ],
@@ -1287,7 +1297,9 @@ class _SummaryCard extends StatelessWidget {
 }
 
 class _AddTransactionComposer extends StatefulWidget {
-  const _AddTransactionComposer();
+  const _AddTransactionComposer({required this.userId});
+
+  final String userId;
 
   @override
   State<_AddTransactionComposer> createState() =>
@@ -1299,15 +1311,15 @@ class _AddTransactionComposerState extends State<_AddTransactionComposer> {
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
   TransactionType _type = TransactionType.expense;
-
-  static const _expenseSuggestions = [
-    'Groceries',
-    'Transport',
-    'Dining',
-    'Bills',
-  ];
-
-  static const _incomeSuggestions = ['Salary', 'Freelance', 'Bonus', 'Refund'];
+  String _categoryId = TransactionCategories.defaultFor(
+    TransactionType.expense,
+  ).id;
+  String _categoryLabel = TransactionCategories.defaultFor(
+    TransactionType.expense,
+  ).label;
+  String _categoryIconKey = TransactionCategories.defaultFor(
+    TransactionType.expense,
+  ).iconKey;
 
   @override
   void dispose() {
@@ -1326,8 +1338,31 @@ class _AddTransactionComposerState extends State<_AddTransactionComposer> {
         title: _titleController.text.trim(),
         amount: double.parse(_amountController.text.trim()),
         type: _type,
+        categoryId: _categoryId,
+        categoryLabel: _categoryLabel,
+        categoryIconKey: _categoryIconKey,
       ),
     );
+  }
+
+  void _changeType(TransactionType type) {
+    _applySelectedCategory(TransactionCategories.defaultFor(type), type: type);
+  }
+
+  void _selectCategory(TransactionCategoryOption category) {
+    _applySelectedCategory(category);
+  }
+
+  void _applySelectedCategory(
+    TransactionCategoryOption category, {
+    TransactionType? type,
+  }) {
+    setState(() {
+      _type = type ?? category.type;
+      _categoryId = category.id;
+      _categoryLabel = category.label;
+      _categoryIconKey = category.iconKey;
+    });
   }
 
   @override
@@ -1335,9 +1370,6 @@ class _AddTransactionComposerState extends State<_AddTransactionComposer> {
     final mediaQuery = MediaQuery.of(context);
     final colors = context.appColors;
     final viewInsets = mediaQuery.viewInsets.bottom;
-    final suggestions = _type == TransactionType.income
-        ? _incomeSuggestions
-        : _expenseSuggestions;
     final accent = _type == TransactionType.income
         ? colors.accentDark
         : colors.error;
@@ -1459,9 +1491,8 @@ class _AddTransactionComposerState extends State<_AddTransactionComposer> {
                                     isSelected:
                                         _type == TransactionType.expense,
                                     selectedColor: colors.error,
-                                    onTap: () => setState(
-                                      () => _type = TransactionType.expense,
-                                    ),
+                                    onTap: () =>
+                                        _changeType(TransactionType.expense),
                                   ),
                                 ),
                                 Expanded(
@@ -1470,21 +1501,107 @@ class _AddTransactionComposerState extends State<_AddTransactionComposer> {
                                     icon: Icons.arrow_downward_rounded,
                                     isSelected: _type == TransactionType.income,
                                     selectedColor: colors.accentDark,
-                                    onTap: () => setState(
-                                      () => _type = TransactionType.income,
-                                    ),
+                                    onTap: () =>
+                                        _changeType(TransactionType.income),
                                   ),
                                 ),
                               ],
                             ),
                           ),
                           const SizedBox(height: 18),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Category',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: colors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                _categoryLabel,
+                                style: TextStyle(
+                                  color: accent,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          StreamBuilder<List<TransactionCategoryOption>>(
+                            stream: context
+                                .read<CategoriesRepository>()
+                                .watchCustomCategories(widget.userId),
+                            builder: (context, snapshot) {
+                              final customCategories =
+                                  snapshot.data ??
+                                  const <TransactionCategoryOption>[];
+                              final categories =
+                                  TransactionCategories.allForType(
+                                    _type,
+                                    customCategories: customCategories,
+                                  );
+
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: double.infinity,
+                                    constraints: const BoxConstraints(
+                                      maxHeight: 132,
+                                    ),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      10,
+                                      10,
+                                      10,
+                                      8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.surfaceMuted,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(color: colors.border),
+                                    ),
+                                    child: SingleChildScrollView(
+                                      child: Wrap(
+                                        spacing: 10,
+                                        runSpacing: 10,
+                                        children: [
+                                          for (final category in categories)
+                                            _CategoryChoiceChip(
+                                              option: category,
+                                              accent: accent,
+                                              isSelected:
+                                                  category.id == _categoryId,
+                                              onTap: () =>
+                                                  _selectCategory(category),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    'Manage custom categories from the side menu.',
+                                    style: TextStyle(
+                                      color: colors.textSecondary,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 18),
                           TextFormField(
                             controller: _titleController,
                             textCapitalization: TextCapitalization.words,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Title',
-                              hintText: 'e.g. Salary, Groceries, Uber',
+                              hintText: _type == TransactionType.income
+                                  ? 'e.g. March salary, Client payment'
+                                  : 'e.g. Uber ride, Electricity bill',
                               prefixIcon: Icon(Icons.edit_note_rounded),
                             ),
                             validator: (value) {
@@ -1513,34 +1630,6 @@ class _AddTransactionComposerState extends State<_AddTransactionComposer> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Quick picks',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: colors.textSecondary.withValues(
-                                alpha: 0.95,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
-                            children: [
-                              for (final item in suggestions)
-                                ActionChip(
-                                  label: Text(item),
-                                  backgroundColor: accent.withValues(
-                                    alpha: 0.08,
-                                  ),
-                                  side: BorderSide(
-                                    color: accent.withValues(alpha: 0.18),
-                                  ),
-                                  onPressed: () => _titleController.text = item,
-                                ),
-                            ],
-                          ),
                           const SizedBox(height: 20),
                           Container(
                             width: double.infinity,
@@ -1568,8 +1657,8 @@ class _AddTransactionComposerState extends State<_AddTransactionComposer> {
                                 Expanded(
                                   child: Text(
                                     _type == TransactionType.income
-                                        ? 'Income entries increase your available balance.'
-                                        : 'Expense entries reduce your available balance.',
+                                        ? '$_categoryLabel income entries increase your available balance.'
+                                        : '$_categoryLabel expenses reduce your available balance.',
                                     style: TextStyle(
                                       color: colors.textSecondary,
                                     ),
@@ -1704,14 +1793,87 @@ class _TypeChoiceButton extends StatelessWidget {
   }
 }
 
+class _CategoryChoiceChip extends StatelessWidget {
+  const _CategoryChoiceChip({
+    required this.option,
+    required this.accent,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final TransactionCategoryOption option;
+  final Color accent;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      decoration: BoxDecoration(
+        color: isSelected ? accent : colors.surfaceMuted,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isSelected ? accent : colors.border),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: accent.withValues(alpha: 0.22),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                ),
+              ]
+            : null,
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TransactionCategoryAvatar(
+                type: option.type,
+                categoryId: option.id,
+                categoryLabel: option.label,
+                categoryIconKey: option.iconKey,
+                size: 24,
+                iconSize: 12,
+                foregroundColor: isSelected ? Colors.white : accent,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                option.label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : colors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _TransactionDraft {
   const _TransactionDraft({
     required this.title,
     required this.amount,
     required this.type,
+    required this.categoryId,
+    required this.categoryLabel,
+    required this.categoryIconKey,
   });
 
   final String title;
   final double amount;
   final TransactionType type;
+  final String categoryId;
+  final String categoryLabel;
+  final String categoryIconKey;
 }

@@ -78,6 +78,9 @@ class DashboardCubit extends Cubit<DashboardState> {
     required String title,
     required double amount,
     required TransactionType type,
+    required String categoryId,
+    required String categoryLabel,
+    required String categoryIconKey,
   }) async {
     try {
       await _transactionsRepository.addTransaction(
@@ -85,6 +88,9 @@ class DashboardCubit extends Cubit<DashboardState> {
         title: title,
         amount: amount,
         type: type,
+        categoryId: categoryId,
+        categoryLabel: categoryLabel,
+        categoryIconKey: categoryIconKey,
       );
     } catch (error) {
       emit(

@@ -26,6 +26,9 @@ class TransactionsRepository {
     required String title,
     required double amount,
     required TransactionType type,
+    required String categoryId,
+    required String categoryLabel,
+    required String categoryIconKey,
   }) async {
     final transaction = TransactionItem(
       id: '',
@@ -33,6 +36,9 @@ class TransactionsRepository {
       amount: amount,
       type: type,
       createdAt: DateTime.now(),
+      categoryId: categoryId,
+      categoryLabel: categoryLabel,
+      categoryIconKey: categoryIconKey,
     );
 
     await _transactionsRef(userId).add(transaction.toMap());

@@ -10,6 +10,9 @@ class TransactionItem extends Equatable {
     required this.amount,
     required this.type,
     required this.createdAt,
+    this.categoryId = '',
+    this.categoryLabel = '',
+    this.categoryIconKey = '',
   });
 
   final String id;
@@ -17,6 +20,9 @@ class TransactionItem extends Equatable {
   final double amount;
   final TransactionType type;
   final DateTime createdAt;
+  final String categoryId;
+  final String categoryLabel;
+  final String categoryIconKey;
 
   factory TransactionItem.fromFirestore(
     QueryDocumentSnapshot<Map<String, dynamic>> doc,
@@ -34,6 +40,9 @@ class TransactionItem extends Equatable {
       createdAt: timestamp is Timestamp
           ? timestamp.toDate()
           : DateTime.fromMillisecondsSinceEpoch(0),
+      categoryId: data['categoryId'] as String? ?? '',
+      categoryLabel: data['categoryLabel'] as String? ?? '',
+      categoryIconKey: data['categoryIconKey'] as String? ?? '',
     );
   }
 
@@ -43,9 +52,21 @@ class TransactionItem extends Equatable {
       'amount': amount,
       'type': type.name,
       'createdAt': Timestamp.fromDate(createdAt),
+      'categoryId': categoryId,
+      'categoryLabel': categoryLabel,
+      'categoryIconKey': categoryIconKey,
     };
   }
 
   @override
-  List<Object> get props => [id, title, amount, type, createdAt];
+  List<Object> get props => [
+    id,
+    title,
+    amount,
+    type,
+    createdAt,
+    categoryId,
+    categoryLabel,
+    categoryIconKey,
+  ];
 }

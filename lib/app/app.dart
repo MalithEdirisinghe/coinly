@@ -3,6 +3,7 @@ import 'package:coinly/app/theme/theme_cubit.dart';
 import 'package:coinly/app/theme/theme_preferences.dart';
 import 'package:coinly/features/auth/data/auth_repository.dart';
 import 'package:coinly/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:coinly/features/categories/data/categories_repository.dart';
 import 'package:coinly/features/auth/presentation/login_page.dart';
 import 'package:coinly/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:coinly/features/dashboard/presentation/pages/dashboard_page.dart';
@@ -54,6 +55,7 @@ class _CoinlyAppView extends StatelessWidget {
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider(create: (_) => AuthRepository()),
+        RepositoryProvider(create: (_) => CategoriesRepository()),
         RepositoryProvider(create: (_) => TransactionsRepository()),
       ],
       child: MultiBlocProvider(

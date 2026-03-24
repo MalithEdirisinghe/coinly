@@ -1,7 +1,10 @@
 import 'package:coinly/app/theme/app_colors.dart';
 import 'package:coinly/core/utils/currency_formatter.dart';
 import 'package:coinly/core/widgets/app_top_app_bar.dart';
+import 'package:coinly/core/widgets/app_confirm_dialog.dart';
 import 'package:coinly/core/widgets/app_toast.dart';
+import 'package:coinly/core/widgets/transaction_category_avatar.dart';
+import 'package:coinly/core/constants/transaction_categories.dart';
 import 'package:coinly/features/auth/domain/app_user.dart';
 import 'package:coinly/features/transactions/data/transactions_repository.dart';
 import 'package:coinly/features/transactions/domain/transaction_item.dart';
@@ -75,35 +78,11 @@ class _TransactionsViewState extends State<_TransactionsView> {
     BuildContext context,
     TransactionItem transaction,
   ) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Delete transaction?'),
-          content: Text(
-            'Remove "${transaction.title}" from your transaction history?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              style: TextButton.styleFrom(
-                foregroundColor: context.appColors.textPrimary,
-              ),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: FilledButton.styleFrom(
-                backgroundColor: context.appColors.error,
-              ),
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
+    return AppConfirmDialog.show(
+      context,
+      title: 'Delete transaction?',
+      message: 'Remove "${transaction.title}" from your transaction history?',
     );
-
-    return result ?? false;
   }
 
   @override
@@ -132,6 +111,10 @@ class _TransactionsViewState extends State<_TransactionsView> {
 
             if (state.transactions.isEmpty) {
               return RefreshIndicator(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? colors.accent
+                    : colors.primary,
+                backgroundColor: colors.surface,
                 onRefresh: () =>
                     context.read<TransactionsPageCubit>().refresh(),
                 child: ListView(
@@ -154,6 +137,10 @@ class _TransactionsViewState extends State<_TransactionsView> {
                 (state.isLoadingMore || state.hasMore ? 1 : 0);
 
             return RefreshIndicator(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? colors.accent
+                  : colors.primary,
+              backgroundColor: colors.surface,
               onRefresh: () => context.read<TransactionsPageCubit>().refresh(),
               child: ListView.separated(
                 controller: _scrollController,
@@ -232,11 +219,15 @@ class _TransactionsViewState extends State<_TransactionsView> {
                           horizontal: 18,
                           vertical: 6,
                         ),
+                        leading: TransactionCategoryAvatar(
+                          type: transaction.type,
+                          categoryId: transaction.categoryId,
+                          categoryLabel: transaction.categoryLabel,
+                          categoryIconKey: transaction.categoryIconKey,
+                        ),
                         title: Text(transaction.title),
                         subtitle: Text(
-                          DateFormat.yMMMd().add_jm().format(
-                            transaction.createdAt,
-                          ),
+                          '${TransactionCategories.labelForTransaction(transaction)} - ${DateFormat.yMMMd().add_jm().format(transaction.createdAt)}',
                           style: TextStyle(color: colors.textSecondary),
                         ),
                         trailing: Text(
