@@ -78,14 +78,9 @@ class DashboardPage extends StatelessWidget {
   }
 
   Future<void> _openTransactionsPage(BuildContext context) {
-    return Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: context.read<DashboardCubit>(),
-          child: TransactionsPage(user: user),
-        ),
-      ),
-    );
+    return Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => TransactionsPage(user: user)));
   }
 
   @override
@@ -256,12 +251,14 @@ class DashboardPage extends StatelessWidget {
                           OutlinedButton.icon(
                             onPressed: () => _openTransactionsPage(context),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: Theme.of(context).brightness ==
+                              foregroundColor:
+                                  Theme.of(context).brightness ==
                                       Brightness.dark
                                   ? colors.accent
                                   : colors.primary,
                               side: BorderSide(
-                                color: Theme.of(context).brightness ==
+                                color:
+                                    Theme.of(context).brightness ==
                                         Brightness.dark
                                     ? colors.accent.withValues(alpha: 0.45)
                                     : colors.primary.withValues(alpha: 0.18),
