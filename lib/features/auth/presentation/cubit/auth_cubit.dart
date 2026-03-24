@@ -40,11 +40,23 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  Future<void> signUp({required String email, required String password}) async {
+  Future<void> signUp({
+    required String email,
+    required String password,
+    required String currencyCode,
+    required String firstName,
+    required String lastName,
+  }) async {
     emit(state.copyWith(isSubmitting: true, errorMessage: null));
 
     try {
-      await _authRepository.signUp(email: email, password: password);
+      await _authRepository.signUp(
+        email: email,
+        password: password,
+        currencyCode: currencyCode,
+        firstName: firstName,
+        lastName: lastName,
+      );
       emit(state.copyWith(isSubmitting: false));
     } on FirebaseAuthException catch (error) {
       emit(state.copyWith(isSubmitting: false, errorMessage: _mapError(error)));

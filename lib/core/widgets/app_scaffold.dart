@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_top_app_bar.dart';
+
 class AppScaffold extends StatelessWidget {
   const AppScaffold({super.key, required this.title, required this.body});
 
@@ -9,7 +11,7 @@ class AppScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppTopAppBar(title: title),
       body: SafeArea(minimum: const EdgeInsets.all(20), child: body),
     );
   }
