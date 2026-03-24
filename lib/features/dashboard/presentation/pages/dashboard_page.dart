@@ -1,4 +1,5 @@
 import 'package:coinly/core/utils/currency_formatter.dart';
+import 'package:coinly/core/widgets/app_top_app_bar.dart';
 import 'package:coinly/core/widgets/app_toast.dart';
 import 'package:coinly/app/theme/theme_cubit.dart';
 import 'package:coinly/features/auth/domain/app_user.dart';
@@ -83,6 +84,17 @@ class DashboardPage extends StatelessWidget {
     ).push(MaterialPageRoute(builder: (_) => TransactionsPage(user: user)));
   }
 
+  Future<void> _openExpenseTrackingPage(BuildContext context) {
+    return Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: context.read<DashboardCubit>(),
+          child: ExpenseTrackingPage(user: user, formatAmount: formatAmount),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<DashboardCubit, DashboardState>(
@@ -156,8 +168,8 @@ class DashboardPage extends StatelessWidget {
             }
 
             return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -166,43 +178,19 @@ class DashboardPage extends StatelessWidget {
                       firstName: user.displayFirstName,
                     ),
                     const SizedBox(height: 20),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [colors.primary, colors.primaryLight],
-                        ),
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.shadow,
-                            blurRadius: 24,
-                            offset: const Offset(0, 14),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Total Balance',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            formatAmount(state.balance),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 30,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
+                    _PeriodBalanceCard(
+                      period: state.selectedPeriod,
+                      label: state.selectedPeriodLabel,
+                      amount: formatAmount(state.selectedPeriodBalance),
+                      onPeriodChanged: context
+                          .read<DashboardCubit>()
+                          .changeTrackingPeriod,
+                    ),
+                    const SizedBox(height: 20),
+                    _ExpenseTrackingShortcutCard(
+                      label: 'Spent ${state.selectedPeriodLabel}',
+                      amount: formatAmount(state.selectedPeriodExpense),
+                      onTap: () => _openExpenseTrackingPage(context),
                     ),
                     const SizedBox(height: 20),
                     Text(
@@ -279,97 +267,92 @@ class DashboardPage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Expanded(
-                      child: state.transactions.isEmpty
-                          ? const Center(
-                              child: Text(
-                                'No transactions yet. Add your first one.',
-                              ),
-                            )
-                          : ListView.separated(
-                              itemCount: recentTransactions.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 12),
-                              itemBuilder: (context, index) {
-                                final transaction = recentTransactions[index];
-                                final amountColor =
-                                    transaction.type == TransactionType.income
-                                    ? colors.accentDark
-                                    : colors.error;
+                    if (state.transactions.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32),
+                        child: Center(
+                          child: Text(
+                            'No transactions yet. Add your first one.',
+                          ),
+                        ),
+                      )
+                    else
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: recentTransactions.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final transaction = recentTransactions[index];
+                          final amountColor =
+                              transaction.type == TransactionType.income
+                              ? colors.accentDark
+                              : colors.error;
 
-                                return Dismissible(
-                                  key: ValueKey(transaction.id),
-                                  direction: DismissDirection.endToStart,
-                                  confirmDismiss: (_) =>
-                                      _confirmDeleteTransaction(
-                                        context,
-                                        transaction,
-                                      ),
-                                  onDismissed: (_) {
-                                    context
-                                        .read<DashboardCubit>()
-                                        .deleteTransaction(transaction.id);
-                                    AppToast.show(
-                                      context,
-                                      message:
-                                          '"${transaction.title}" deleted.',
-                                      type: AppToastType.success,
-                                    );
-                                  },
-                                  background: Container(
-                                    decoration: BoxDecoration(
-                                      color: colors.error,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    alignment: Alignment.centerRight,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                    ),
-                                    child: const Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        Icon(
-                                          Icons.delete_outline_rounded,
-                                          color: Colors.white,
-                                        ),
-                                        SizedBox(height: 6),
-                                        Text(
-                                          'Delete',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ],
+                          return Dismissible(
+                            key: ValueKey(transaction.id),
+                            direction: DismissDirection.endToStart,
+                            confirmDismiss: (_) =>
+                                _confirmDeleteTransaction(context, transaction),
+                            onDismissed: (_) {
+                              context.read<DashboardCubit>().deleteTransaction(
+                                transaction.id,
+                              );
+                              AppToast.show(
+                                context,
+                                message: '"${transaction.title}" deleted.',
+                                type: AppToastType.success,
+                              );
+                            },
+                            background: Container(
+                              decoration: BoxDecoration(
+                                color: colors.error,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                              child: const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Icon(
+                                    Icons.delete_outline_rounded,
+                                    color: Colors.white,
+                                  ),
+                                  SizedBox(height: 6),
+                                  Text(
+                                    'Delete',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                  child: Card(
-                                    child: ListTile(
-                                      title: Text(transaction.title),
-                                      subtitle: Text(
-                                        DateFormat.yMMMd().add_jm().format(
-                                          transaction.createdAt,
-                                        ),
-                                        style: TextStyle(
-                                          color: colors.textSecondary,
-                                        ),
-                                      ),
-                                      trailing: Text(
-                                        '${transaction.type == TransactionType.income ? '+' : '-'}${formatAmount(transaction.amount)}',
-                                        style: TextStyle(
-                                          color: amountColor,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
+                                ],
+                              ),
                             ),
-                    ),
+                            child: Card(
+                              child: ListTile(
+                                title: Text(transaction.title),
+                                subtitle: Text(
+                                  DateFormat.yMMMd().add_jm().format(
+                                    transaction.createdAt,
+                                  ),
+                                  style: TextStyle(color: colors.textSecondary),
+                                ),
+                                trailing: Text(
+                                  '${transaction.type == TransactionType.income ? '+' : '-'}${formatAmount(transaction.amount)}',
+                                  style: TextStyle(
+                                    color: amountColor,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                   ],
                 ),
               ),
@@ -797,6 +780,460 @@ class _ThemeChoiceChip extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class ExpenseTrackingPage extends StatelessWidget {
+  const ExpenseTrackingPage({
+    super.key,
+    required this.user,
+    required this.formatAmount,
+  });
+
+  final AppUser user;
+  final String Function(double amount) formatAmount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: const AppTopAppBar(title: 'Expense Tracking'),
+      body: BlocBuilder<DashboardCubit, DashboardState>(
+        builder: (context, state) {
+          final previewTransactions = state.trackedExpenseTransactions
+              .take(5)
+              .toList(growable: false);
+
+          return SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              child: _ExpenseTrackingSection(
+                selectedPeriod: state.selectedPeriod,
+                onPeriodChanged: context
+                    .read<DashboardCubit>()
+                    .changeTrackingPeriod,
+                amount: formatAmount(state.selectedPeriodExpense),
+                label: 'Spent ${state.selectedPeriodLabel}',
+                count: state.trackedExpenseTransactions.length,
+                previewTransactions: previewTransactions,
+                formatAmount: formatAmount,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _PeriodBalanceCard extends StatelessWidget {
+  const _PeriodBalanceCard({
+    required this.period,
+    required this.label,
+    required this.amount,
+    required this.onPeriodChanged,
+  });
+
+  final DashboardTrackingPeriod period;
+  final String label;
+  final String amount;
+  final ValueChanged<DashboardTrackingPeriod> onPeriodChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [colors.primary, colors.primaryLight]),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: colors.shadow,
+            blurRadius: 24,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Balance for $label',
+            style: const TextStyle(color: Colors.white70, fontSize: 14),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            amount,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 30,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _PeriodToggle(
+            selectedPeriod: period,
+            onChanged: onPeriodChanged,
+            selectedBackgroundColor: Colors.white,
+            selectedForegroundColor: colors.primary,
+            unselectedForegroundColor: Colors.white70,
+            backgroundColor: Colors.white.withValues(alpha: 0.08),
+            borderColor: Colors.white.withValues(alpha: 0.10),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExpenseTrackingShortcutCard extends StatelessWidget {
+  const _ExpenseTrackingShortcutCard({
+    required this.label,
+    required this.amount,
+    required this.onTap,
+  });
+
+  final String label;
+  final String amount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(22),
+      child: Ink(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: colors.border),
+          boxShadow: [
+            BoxShadow(
+              color: colors.shadow,
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Expense Tracking',
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    label,
+                    style: TextStyle(color: colors.textSecondary, fontSize: 13),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    amount,
+                    style: TextStyle(
+                      color: colors.error,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: (isDark ? colors.accent : colors.primary).withValues(
+                  alpha: 0.12,
+                ),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Icon(
+                Icons.east_rounded,
+                color: isDark ? colors.accent : colors.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExpenseTrackingSection extends StatelessWidget {
+  const _ExpenseTrackingSection({
+    required this.selectedPeriod,
+    required this.onPeriodChanged,
+    required this.amount,
+    required this.label,
+    required this.count,
+    required this.previewTransactions,
+    required this.formatAmount,
+  });
+
+  final DashboardTrackingPeriod selectedPeriod;
+  final ValueChanged<DashboardTrackingPeriod> onPeriodChanged;
+  final String amount;
+  final String label;
+  final int count;
+  final List<TransactionItem> previewTransactions;
+  final String Function(double amount) formatAmount;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: colors.border),
+        boxShadow: [
+          BoxShadow(
+            color: colors.shadow,
+            blurRadius: 22,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Expense Tracking',
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: colors.error.withValues(alpha: isDark ? 0.16 : 0.10),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(Icons.insights_rounded, color: colors.error),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _PeriodToggle(
+            selectedPeriod: selectedPeriod,
+            onChanged: onPeriodChanged,
+            selectedBackgroundColor: isDark ? colors.accentDark : colors.primary,
+            selectedForegroundColor: Colors.white,
+            unselectedForegroundColor: colors.textSecondary,
+            backgroundColor: isDark ? colors.primaryLight : colors.surfaceMuted,
+            borderColor: isDark
+                ? colors.accent.withValues(alpha: 0.18)
+                : colors.border,
+          ),
+          const SizedBox(height: 18),
+          Text(
+            amount,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            count == 0
+                ? 'No expense transactions in this period yet.'
+                : '$count expense transaction${count == 1 ? '' : 's'} recorded.',
+            style: TextStyle(color: colors.textSecondary, fontSize: 14),
+          ),
+          if (previewTransactions.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              'Latest expenses in this period',
+              style: TextStyle(
+                color: colors.textSecondary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 10),
+            for (final transaction in previewTransactions) ...[
+              _TrackedExpenseRow(
+                transaction: transaction,
+                amount: formatAmount(transaction.amount),
+              ),
+              if (transaction != previewTransactions.last)
+                const SizedBox(height: 10),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PeriodToggle extends StatelessWidget {
+  const _PeriodToggle({
+    required this.selectedPeriod,
+    required this.onChanged,
+    required this.selectedBackgroundColor,
+    required this.selectedForegroundColor,
+    required this.unselectedForegroundColor,
+    required this.backgroundColor,
+    required this.borderColor,
+  });
+
+  final DashboardTrackingPeriod selectedPeriod;
+  final ValueChanged<DashboardTrackingPeriod> onChanged;
+  final Color selectedBackgroundColor;
+  final Color selectedForegroundColor;
+  final Color unselectedForegroundColor;
+  final Color backgroundColor;
+  final Color borderColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          for (final period in DashboardTrackingPeriod.values)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  decoration: BoxDecoration(
+                    color: period == selectedPeriod
+                        ? selectedBackgroundColor
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: InkWell(
+                    onTap: () => onChanged(period),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        switch (period) {
+                          DashboardTrackingPeriod.daily => 'Daily',
+                          DashboardTrackingPeriod.weekly => 'Weekly',
+                          DashboardTrackingPeriod.monthly => 'Monthly',
+                        },
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: period == selectedPeriod
+                              ? selectedForegroundColor
+                              : unselectedForegroundColor,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrackedExpenseRow extends StatelessWidget {
+  const _TrackedExpenseRow({required this.transaction, required this.amount});
+
+  final TransactionItem transaction;
+  final String amount;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: colors.surfaceMuted,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: colors.error.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(Icons.arrow_upward_rounded, color: colors.error),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  transaction.title,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  DateFormat.MMMd().add_jm().format(transaction.createdAt),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '-$amount',
+            style: TextStyle(color: colors.error, fontWeight: FontWeight.w700),
+          ),
+        ],
       ),
     );
   }
