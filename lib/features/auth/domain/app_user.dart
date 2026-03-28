@@ -15,6 +15,8 @@ class AppUser extends Equatable {
   final String firstName;
   final String lastName;
 
+  bool get hasSelectedCurrency => currencyCode.trim().isNotEmpty;
+
   String get displayFirstName {
     if (firstName.trim().isNotEmpty) {
       return _normalizeName(firstName);
@@ -29,6 +31,22 @@ class AppUser extends Equatable {
         .toList(growable: false);
 
     return parts.join(' ');
+  }
+
+  AppUser copyWith({
+    String? id,
+    String? email,
+    String? currencyCode,
+    String? firstName,
+    String? lastName,
+  }) {
+    return AppUser(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      currencyCode: currencyCode ?? this.currencyCode,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+    );
   }
 
   String _normalizeName(String value) {

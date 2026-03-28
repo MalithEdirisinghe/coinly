@@ -1,10 +1,11 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:coinly/features/auth/data/auth_repository.dart';
 import 'package:coinly/features/auth/domain/app_user.dart';
 import 'package:equatable/equatable.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 part 'auth_state.dart';
 
@@ -26,11 +27,11 @@ class AuthCubit extends Cubit<AuthState> {
   StreamSubscription<AppUser?>? _subscription;
 
   void toggleMode() {
-    emit(state.copyWith(isLoginMode: !state.isLoginMode, errorMessage: null));
+    emit(state.copyWith(isLoginMode: !state.isLoginMode, clearError: true));
   }
 
   Future<void> signIn({required String email, required String password}) async {
-    emit(state.copyWith(isSubmitting: true, errorMessage: null));
+    emit(state.copyWith(isSubmitting: true, clearError: true));
 
     try {
       await _authRepository.signIn(email: email, password: password);
@@ -47,7 +48,7 @@ class AuthCubit extends Cubit<AuthState> {
     required String firstName,
     required String lastName,
   }) async {
-    emit(state.copyWith(isSubmitting: true, errorMessage: null));
+    emit(state.copyWith(isSubmitting: true, clearError: true));
 
     try {
       await _authRepository.signUp(
@@ -63,12 +64,64 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  Future<void> signInWithGoogle() async {
+    emit(state.copyWith(isSubmitting: true, clearError: true));
+
+    try {
+      await _authRepository.signInWithGoogle();
+      emit(state.copyWith(isSubmitting: false));
+    } on GoogleSignInException catch (error) {
+      final message = _mapGoogleError(error);
+      emit(
+        state.copyWith(
+          isSubmitting: false,
+          errorMessage: message,
+          clearError: message == null,
+        ),
+      );
+    } on FirebaseAuthException catch (error) {
+      emit(state.copyWith(isSubmitting: false, errorMessage: _mapError(error)));
+    } catch (_) {
+      emit(
+        state.copyWith(
+          isSubmitting: false,
+          errorMessage: 'Google sign-in could not be completed.',
+        ),
+      );
+    }
+  }
+
+  Future<void> completeProfile({required String currencyCode}) async {
+    final user = state.user;
+    if (user == null) {
+      return;
+    }
+
+    emit(state.copyWith(isSubmitting: true, clearError: true));
+
+    try {
+      final updatedUser = await _authRepository.updateCurrencyCode(
+        userId: user.id,
+        currencyCode: currencyCode,
+      );
+      emit(
+        state.copyWith(
+          isSubmitting: false,
+          user: updatedUser,
+          clearError: true,
+        ),
+      );
+    } on FirebaseAuthException catch (error) {
+      emit(state.copyWith(isSubmitting: false, errorMessage: _mapError(error)));
+    }
+  }
+
   Future<void> signOut() {
     return _authRepository.signOut();
   }
 
   void clearError() {
-    emit(state.copyWith(errorMessage: null));
+    emit(state.copyWith(clearError: true));
   }
 
   void _onAuthChanged(AppUser? user) {
@@ -78,7 +131,7 @@ class AuthCubit extends Cubit<AuthState> {
             ? AuthStatus.unauthenticated
             : AuthStatus.authenticated,
         user: user,
-        errorMessage: null,
+        clearError: true,
       ),
     );
   }
@@ -95,8 +148,27 @@ class AuthCubit extends Cubit<AuthState> {
       case 'invalid-credential':
       case 'user-not-found':
         return 'Invalid email or password.';
+      case 'google-sign-in-failed':
+        return 'Google sign-in could not be completed.';
+      case 'account-exists-with-different-credential':
+        return 'This email is already linked with another sign-in method.';
       default:
         return error.message ?? 'Authentication failed.';
+    }
+  }
+
+  String? _mapGoogleError(GoogleSignInException error) {
+    switch (error.code) {
+      case GoogleSignInExceptionCode.canceled:
+      case GoogleSignInExceptionCode.interrupted:
+        return null;
+      case GoogleSignInExceptionCode.uiUnavailable:
+        return 'Google sign-in is currently unavailable on this device.';
+      default:
+        final description = error.description?.trim() ?? '';
+        return description.isEmpty
+            ? 'Google sign-in could not be completed.'
+            : description;
     }
   }
 
@@ -106,3 +178,5 @@ class AuthCubit extends Cubit<AuthState> {
     return super.close();
   }
 }
+
+

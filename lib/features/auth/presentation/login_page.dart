@@ -1,4 +1,4 @@
-import 'package:coinly/core/constants/supported_currencies.dart';
+﻿import 'package:coinly/core/constants/supported_currencies.dart';
 import 'package:coinly/core/widgets/app_toast.dart';
 import 'package:coinly/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:flutter/material.dart';
@@ -308,6 +308,82 @@ class _LoginPageState extends State<LoginPage> {
                                           ),
                                         ),
                                       ),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Divider(
+                                              color: colors.border,
+                                              thickness: 1,
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                            ),
+                                            child: Text(
+                                              'or',
+                                              style: TextStyle(
+                                                color: colors.textSecondary,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Divider(
+                                              color: colors.border,
+                                              thickness: 1,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Center(
+                                        child: InkWell(
+                                          onTap: state.isSubmitting
+                                              ? null
+                                              : () => context
+                                                    .read<AuthCubit>()
+                                                    .signInWithGoogle(),
+                                          borderRadius: BorderRadius.circular(
+                                            18,
+                                          ),
+                                          child: Opacity(
+                                            opacity: state.isSubmitting
+                                                ? 0.55
+                                                : 1,
+                                            child: Container(
+                                              width: 50,
+                                              height: 50,
+                                              padding: const EdgeInsets.all(10),
+                                              decoration: BoxDecoration(
+                                                color: colors.surfaceMuted,
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                                border: Border.all(
+                                                  color: colors.border,
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: colors.shadow,
+                                                    blurRadius: 12,
+                                                    offset: const Offset(0, 8),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(14),
+                                                child: Image.asset(
+                                                  'assets/google.png',
+                                                  height: 28,
+                                                  fit: BoxFit.contain,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                       const SizedBox(height: 12),
                                       TextButton(
                                         onPressed: state.isSubmitting
@@ -366,3 +442,4 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
+

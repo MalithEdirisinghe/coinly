@@ -1,4 +1,4 @@
-name: coinly
+﻿name: coinly
 description: "Coinly Flutter application."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -38,6 +38,7 @@ dependencies:
   intl: ^0.20.2
   get_it: ^9.2.1
   shared_preferences: ^2.5.3
+  google_sign_in: ^7.2.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -64,6 +65,7 @@ flutter:
     - assets/logo.png
     - assets/icon.png
     - assets/animate.gif
+    - assets/google.png
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
@@ -115,3 +117,4 @@ flutter_launcher_icons:
   adaptive_icon_foreground: assets/icon.png
   adaptive_icon_foreground_inset: 8
   min_sdk_android: 21
+

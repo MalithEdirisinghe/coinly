@@ -4,6 +4,7 @@ import 'package:coinly/app/theme/theme_preferences.dart';
 import 'package:coinly/features/auth/data/auth_repository.dart';
 import 'package:coinly/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:coinly/features/categories/data/categories_repository.dart';
+import 'package:coinly/features/auth/presentation/currency_setup_page.dart';
 import 'package:coinly/features/auth/presentation/login_page.dart';
 import 'package:coinly/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:coinly/features/dashboard/presentation/pages/dashboard_page.dart';
@@ -142,14 +143,19 @@ class _AuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
-        if (state.status == AuthStatus.authenticated && state.user != null) {
+        final user = state.user;
+        if (state.status == AuthStatus.authenticated && user != null) {
+          if (!user.hasSelectedCurrency) {
+            return CurrencySetupPage(user: user);
+          }
+
           return BlocProvider(
-            key: ValueKey(state.user!.id),
+            key: ValueKey(user.id),
             create: (context) => DashboardCubit(
               transactionsRepository: context.read<TransactionsRepository>(),
-              userId: state.user!.id,
+              userId: user.id,
             )..start(),
-            child: DashboardPage(user: state.user!),
+            child: DashboardPage(user: user),
           );
         }
 
