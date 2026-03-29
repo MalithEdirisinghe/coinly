@@ -1,4 +1,4 @@
-import 'package:coinly/core/utils/currency_formatter.dart';
+﻿import 'package:coinly/core/utils/currency_formatter.dart';
 import 'package:coinly/core/constants/transaction_categories.dart';
 import 'package:coinly/core/widgets/app_top_app_bar.dart';
 import 'package:coinly/core/widgets/app_toast.dart';
@@ -85,6 +85,19 @@ class DashboardPage extends StatelessWidget {
     ).push(MaterialPageRoute(builder: (_) => CategoriesPage(user: user)));
   }
 
+  Future<void> _confirmSignOut(BuildContext context) async {
+    final shouldSignOut = await AppConfirmDialog.show(
+      context,
+      title: 'Log out?',
+      message: 'Are you sure you want to sign out of Coinly?',
+      confirmLabel: 'Log out',
+    );
+    if (!shouldSignOut || !context.mounted) {
+      return;
+    }
+    await context.read<AuthCubit>().signOut();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<DashboardCubit, DashboardState>(
@@ -103,7 +116,7 @@ class DashboardPage extends StatelessWidget {
         resizeToAvoidBottomInset: false,
         endDrawer: _DashboardMenu(
           user: user,
-          onSignOut: () => context.read<AuthCubit>().signOut(),
+          onSignOut: () => _confirmSignOut(context),
           onOpenAddTransaction: () => _showAddTransactionDialog(context),
           onOpenManageCategories: () => _openCategoriesPage(context),
         ),
@@ -447,7 +460,7 @@ class _DashboardMenu extends StatelessWidget {
   });
 
   final AppUser user;
-  final VoidCallback onSignOut;
+  final Future<void> Function() onSignOut;
   final VoidCallback onOpenAddTransaction;
   final VoidCallback onOpenManageCategories;
 
@@ -618,9 +631,9 @@ class _DashboardMenu extends StatelessWidget {
                 icon: Icons.logout_rounded,
                 title: 'Log out',
                 subtitle: 'Sign out from this account',
-                onTap: () {
+                onTap: () async {
                   Navigator.of(context).pop();
-                  onSignOut();
+                  await onSignOut();
                 },
               ),
               const Spacer(),
@@ -1877,3 +1890,4 @@ class _TransactionDraft {
   final String categoryLabel;
   final String categoryIconKey;
 }
+
