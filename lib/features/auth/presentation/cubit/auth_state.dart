@@ -1,6 +1,6 @@
-part of 'auth_cubit.dart';
+﻿part of 'auth_cubit.dart';
 
-enum AuthStatus { authenticated, unauthenticated }
+enum AuthStatus { checking, authenticated, unauthenticated }
 
 class AuthState extends Equatable {
   const AuthState({

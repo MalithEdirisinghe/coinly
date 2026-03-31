@@ -18,12 +18,23 @@ import 'package:intl/intl.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../cubit/dashboard_cubit.dart';
 
-class DashboardPage extends StatelessWidget {
-  static const int _recentTransactionsLimit = 5;
-
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key, required this.user});
 
   final AppUser user;
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  static const int _recentTransactionsLimit = 5;
+
+  AppUser get user => widget.user;
+
+  int _currentIndex = 0;
+  bool _isEndDrawerOpen = false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   String formatAmount(double amount) {
     return CurrencyFormatter.format(amount, currencyCode: user.currencyCode);
@@ -62,29 +73,6 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Future<void> _openTransactionsPage(BuildContext context) {
-    return Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => TransactionsPage(user: user)));
-  }
-
-  Future<void> _openExpenseTrackingPage(BuildContext context) {
-    return Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: context.read<DashboardCubit>(),
-          child: ExpenseTrackingPage(user: user, formatAmount: formatAmount),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openCategoriesPage(BuildContext context) {
-    return Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => CategoriesPage(user: user)));
-  }
-
   Future<void> _confirmSignOut(BuildContext context) async {
     final shouldSignOut = await AppConfirmDialog.show(
       context,
@@ -96,6 +84,13 @@ class DashboardPage extends StatelessWidget {
       return;
     }
     await context.read<AuthCubit>().signOut();
+  }
+
+  void _selectTab(int index) {
+    if (_currentIndex == index) {
+      return;
+    }
+    setState(() => _currentIndex = index);
   }
 
   @override
@@ -113,270 +108,448 @@ class DashboardPage extends StatelessWidget {
         context.read<DashboardCubit>().clearError();
       },
       child: Scaffold(
+        key: _scaffoldKey,
         resizeToAvoidBottomInset: false,
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         endDrawer: _DashboardMenu(
           user: user,
           onSignOut: () => _confirmSignOut(context),
           onOpenAddTransaction: () => _showAddTransactionDialog(context),
-          onOpenManageCategories: () => _openCategoriesPage(context),
+          onOpenManageCategories: () => _selectTab(3),
         ),
-        bottomNavigationBar: SafeArea(
-          minimum: const EdgeInsets.fromLTRB(16, 4, 16, 28),
-          child: Builder(
-            builder: (context) {
-              final colors = context.appColors;
-              final isDark = Theme.of(context).brightness == Brightness.dark;
-              return DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isDark
-                        ? [colors.accentDark, colors.accent]
-                        : [colors.primary, colors.primaryLight],
-                  ),
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (isDark ? colors.accentDark : colors.primary)
-                          .withValues(alpha: 0.28),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: FilledButton.icon(
-                  onPressed: () => _showAddTransactionDialog(context),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    foregroundColor: Colors.white,
-                    shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  label: const Text('Add Transaction'),
-                ),
-              );
-            },
-          ),
-        ),
-        body: BlocBuilder<DashboardCubit, DashboardState>(
-          builder: (context, state) {
-            final colors = context.appColors;
-            final recentTransactions = state.transactions
-                .take(_recentTransactionsLimit)
-                .toList(growable: false);
-
-            if (state.isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            return SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _DashboardHeader(
-                      appName: 'Coinly',
-                      firstName: user.displayFirstName,
-                    ),
-                    const SizedBox(height: 20),
-                    _PeriodBalanceCard(
-                      period: state.selectedPeriod,
-                      label: state.selectedPeriodLabel,
-                      amount: formatAmount(state.selectedPeriodBalance),
-                      onPeriodChanged: context
-                          .read<DashboardCubit>()
-                          .changeTrackingPeriod,
-                    ),
-                    const SizedBox(height: 20),
-                    _ExpenseTrackingShortcutCard(
-                      label: 'Spent ${state.selectedPeriodLabel}',
-                      amount: formatAmount(state.selectedPeriodExpense),
-                      onTap: () => _openExpenseTrackingPage(context),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Recent Overview',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _SummaryCard(
-                            title: 'Income',
-                            amount: formatAmount(state.income),
-                            color: colors.accent,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _SummaryCard(
-                            title: 'Expense',
-                            amount: formatAmount(state.expense),
-                            color: colors.error,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Recent Transactions',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        if (state.transactions.length >
-                            _recentTransactionsLimit)
-                          OutlinedButton.icon(
-                            onPressed: () => _openTransactionsPage(context),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor:
-                                  Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? colors.accent
-                                  : colors.primary,
-                              side: BorderSide(
-                                color:
-                                    Theme.of(context).brightness ==
-                                        Brightness.dark
-                                    ? colors.accent.withValues(alpha: 0.45)
-                                    : colors.primary.withValues(alpha: 0.18),
-                              ),
-                              backgroundColor:
-                                  Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? colors.accent.withValues(alpha: 0.08)
-                                  : colors.primary.withValues(alpha: 0.05),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                            ),
-                            icon: const Icon(Icons.east_rounded, size: 16),
-                            label: const Text('See all'),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    if (state.transactions.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 32),
-                        child: Center(
-                          child: Text(
-                            'No transactions yet. Add your first one.',
-                          ),
-                        ),
-                      )
-                    else
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: recentTransactions.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final transaction = recentTransactions[index];
-                          final amountColor =
-                              transaction.type == TransactionType.income
-                              ? colors.accentDark
-                              : colors.error;
-
-                          return Dismissible(
-                            key: ValueKey(transaction.id),
-                            direction: DismissDirection.endToStart,
-                            confirmDismiss: (_) =>
-                                _confirmDeleteTransaction(context, transaction),
-                            onDismissed: (_) {
-                              context.read<DashboardCubit>().deleteTransaction(
-                                transaction.id,
-                              );
-                              AppToast.show(
-                                context,
-                                message: '"${transaction.title}" deleted.',
-                                type: AppToastType.success,
-                              );
-                            },
-                            background: Container(
-                              decoration: BoxDecoration(
-                                color: colors.error,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              alignment: Alignment.centerRight,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
-                              child: const Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Icon(
-                                    Icons.delete_outline_rounded,
-                                    color: Colors.white,
-                                  ),
-                                  SizedBox(height: 6),
-                                  Text(
-                                    'Delete',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            child: Card(
-                              child: ListTile(
-                                leading: TransactionCategoryAvatar(
-                                  type: transaction.type,
-                                  categoryId: transaction.categoryId,
-                                  categoryLabel: transaction.categoryLabel,
-                                  categoryIconKey: transaction.categoryIconKey,
-                                ),
-                                title: Text(transaction.title),
-                                subtitle: Text(
-                                  '${TransactionCategories.labelForTransaction(transaction)} - ${DateFormat.yMMMd().add_jm().format(transaction.createdAt)}',
-                                  style: TextStyle(color: colors.textSecondary),
-                                ),
-                                trailing: Text(
-                                  '${transaction.type == TransactionType.income ? '+' : '-'}${formatAmount(transaction.amount)}',
-                                  style: TextStyle(
-                                    color: amountColor,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                  ],
-                ),
+        floatingActionButton: _isEndDrawerOpen || _currentIndex != 0
+            ? null
+            : _BottomAddButton(
+                onTap: () => _showAddTransactionDialog(context),
               ),
-            );
-          },
+        onEndDrawerChanged: (isOpened) {
+          if (_isEndDrawerOpen == isOpened) {
+            return;
+          }
+          setState(() => _isEndDrawerOpen = isOpened);
+        },
+        bottomNavigationBar: _DashboardBottomNav(
+          currentIndex: _currentIndex,
+          onTap: _selectTab,
+        ),
+        body: IndexedStack(
+          index: _currentIndex,
+          children: [
+            _DashboardHomeTab(
+              user: user,
+              recentTransactionsLimit: _recentTransactionsLimit,
+              formatAmount: formatAmount,
+              onOpenTransactions: () => _selectTab(1),
+              onOpenExpenseTracking: () => _selectTab(2),
+              onOpenMenu: () => _scaffoldKey.currentState?.openEndDrawer(),
+              onConfirmDeleteTransaction: _confirmDeleteTransaction,
+            ),
+            TransactionsPage(user: user),
+            BlocProvider.value(
+              value: context.read<DashboardCubit>(),
+              child: ExpenseTrackingPage(
+                user: user,
+                formatAmount: formatAmount,
+              ),
+            ),
+            CategoriesPage(user: user),
+          ],
         ),
       ),
     );
   }
 }
 
+class _DashboardHomeTab extends StatelessWidget {
+  const _DashboardHomeTab({
+    required this.user,
+    required this.recentTransactionsLimit,
+    required this.formatAmount,
+    required this.onOpenTransactions,
+    required this.onOpenExpenseTracking,
+    required this.onOpenMenu,
+    required this.onConfirmDeleteTransaction,
+  });
+
+  final AppUser user;
+  final int recentTransactionsLimit;
+  final String Function(double amount) formatAmount;
+  final VoidCallback onOpenTransactions;
+  final VoidCallback onOpenExpenseTracking;
+  final VoidCallback onOpenMenu;
+  final Future<bool> Function(BuildContext, TransactionItem)
+  onConfirmDeleteTransaction;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<DashboardCubit, DashboardState>(
+        builder: (context, state) {
+          final colors = context.appColors;
+          final recentTransactions = state.transactions
+              .take(recentTransactionsLimit)
+              .toList(growable: false);
+
+          if (state.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          return SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 164),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _DashboardHeader(
+                    appName: 'Coinly',
+                    firstName: user.displayFirstName,
+                    onOpenMenu: onOpenMenu,
+                  ),
+                  const SizedBox(height: 20),
+                  _PeriodBalanceCard(
+                    period: state.selectedPeriod,
+                    label: state.selectedPeriodLabel,
+                    amount: formatAmount(state.selectedPeriodBalance),
+                    onPeriodChanged: context
+                        .read<DashboardCubit>()
+                        .changeTrackingPeriod,
+                  ),
+                  const SizedBox(height: 20),
+                  _ExpenseTrackingShortcutCard(
+                    label: 'Spent ${state.selectedPeriodLabel}',
+                    amount: formatAmount(state.selectedPeriodExpense),
+                    onTap: onOpenExpenseTracking,
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Recent Overview',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SummaryCard(
+                          title: 'Income',
+                          amount: formatAmount(state.income),
+                          color: colors.accent,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _SummaryCard(
+                          title: 'Expense',
+                          amount: formatAmount(state.expense),
+                          color: colors.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Recent Transactions',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      if (state.transactions.length > recentTransactionsLimit)
+                        OutlinedButton.icon(
+                          onPressed: onOpenTransactions,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor:
+                                Theme.of(context).brightness ==
+                                    Brightness.dark
+                                ? colors.accent
+                                : colors.primary,
+                            side: BorderSide(
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? colors.accent.withValues(alpha: 0.45)
+                                  : colors.primary.withValues(alpha: 0.18),
+                            ),
+                            backgroundColor:
+                                Theme.of(context).brightness ==
+                                    Brightness.dark
+                                ? colors.accent.withValues(alpha: 0.08)
+                                : colors.primary.withValues(alpha: 0.05),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                          ),
+                          icon: const Icon(Icons.east_rounded, size: 16),
+                          label: const Text('See all'),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (state.transactions.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(
+                        child: Text(
+                          'No transactions yet. Add your first one.',
+                        ),
+                      ),
+                    )
+                  else
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: recentTransactions.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final transaction = recentTransactions[index];
+                        final amountColor =
+                            transaction.type == TransactionType.income
+                            ? colors.accentDark
+                            : colors.error;
+
+                        return Dismissible(
+                          key: ValueKey(transaction.id),
+                          direction: DismissDirection.endToStart,
+                          confirmDismiss: (_) =>
+                              onConfirmDeleteTransaction(context, transaction),
+                          onDismissed: (_) {
+                            context.read<DashboardCubit>().deleteTransaction(
+                              transaction.id,
+                            );
+                            AppToast.show(
+                              context,
+                              message: '"${transaction.title}" deleted.',
+                              type: AppToastType.success,
+                            );
+                          },
+                          background: Container(
+                            decoration: BoxDecoration(
+                              color: colors.error,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                            ),
+                            child: const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Icon(
+                                  Icons.delete_outline_rounded,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  'Delete',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          child: Card(
+                            child: ListTile(
+                              leading: TransactionCategoryAvatar(
+                                type: transaction.type,
+                                categoryId: transaction.categoryId,
+                                categoryLabel: transaction.categoryLabel,
+                                categoryIconKey: transaction.categoryIconKey,
+                              ),
+                              title: Text(transaction.title),
+                              subtitle: Text(
+                                '${TransactionCategories.labelForTransaction(transaction)} - ${DateFormat.yMMMd().add_jm().format(transaction.createdAt)}',
+                                style: TextStyle(color: colors.textSecondary),
+                              ),
+                              trailing: Text(
+                                '${transaction.type == TransactionType.income ? '+' : '-'}${formatAmount(transaction.amount)}',
+                                style: TextStyle(
+                                  color: amountColor,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+  }
+}
+
+class _DashboardBottomNav extends StatelessWidget {
+  const _DashboardBottomNav({
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final items = const [
+      (Icons.home_rounded, 'Home'),
+      (Icons.receipt_long_rounded, 'Transactions'),
+      (Icons.insights_rounded, 'Tracking'),
+      (Icons.category_rounded, 'Categories'),
+    ];
+
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: Container(
+        height: 66,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: colors.border),
+          boxShadow: [
+            BoxShadow(
+              color: colors.shadow,
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: List.generate(items.length, (index) {
+            final item = items[index];
+            final isSelected = index == currentIndex;
+            return Expanded(
+              child: InkWell(
+                onTap: () => onTap(index),
+                borderRadius: BorderRadius.circular(18),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? (isDark
+                              ? colors.accent.withValues(alpha: 0.20)
+                              : colors.primary.withValues(alpha: 0.12))
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        item.$1,
+                        size: 20,
+                        color: isSelected
+                            ? (isDark ? colors.accent : colors.primary)
+                            : colors.textSecondary,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        item.$2,
+                        style: TextStyle(
+                          color: isSelected
+                              ? (isDark ? colors.accent : colors.primary)
+                              : colors.textSecondary,
+                          fontSize: 11,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomAddButton extends StatelessWidget {
+  const _BottomAddButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [colors.accentDark, colors.accent]
+              : [colors.primary, colors.primaryLight],
+        ),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: (isDark ? colors.accentDark : colors.primary).withValues(
+              alpha: 0.30,
+            ),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(22),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.add_rounded, color: Colors.white),
+                SizedBox(width: 8),
+                Text(
+                  'Add',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 class _DashboardHeader extends StatelessWidget {
-  const _DashboardHeader({required this.appName, required this.firstName});
+  const _DashboardHeader({
+    required this.appName,
+    required this.firstName,
+    required this.onOpenMenu,
+  });
 
   final String appName;
   final String firstName;
+  final VoidCallback onOpenMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -415,12 +588,10 @@ class _DashboardHeader extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Builder(
-                    builder: (context) => IconButton(
-                      onPressed: () => Scaffold.of(context).openEndDrawer(),
-                      icon: const Icon(Icons.menu_rounded),
-                      tooltip: 'Menu',
-                    ),
+                  child: IconButton(
+                    onPressed: onOpenMenu,
+                    icon: const Icon(Icons.menu_rounded),
+                    tooltip: 'Menu',
                   ),
                 ),
               ),
@@ -477,7 +648,7 @@ class _DashboardMenu extends StatelessWidget {
       width: 304,
       backgroundColor: colors.surface,
       child: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,7 +807,7 @@ class _DashboardMenu extends StatelessWidget {
                   await onSignOut();
                 },
               ),
-              const Spacer(),
+              const SizedBox(height: 24),
               Text(
                 'Track spending with clarity.',
                 style: TextStyle(
@@ -821,7 +992,7 @@ class ExpenseTrackingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const AppTopAppBar(title: 'Expense Tracking'),
+      appBar: const AppTopAppBar(title: 'Expense Tracking', showBackButton: false),
       body: BlocBuilder<DashboardCubit, DashboardState>(
         builder: (context, state) {
           final previewTransactions = state.trackedExpenseTransactions
@@ -1890,4 +2061,6 @@ class _TransactionDraft {
   final String categoryLabel;
   final String categoryIconKey;
 }
+
+
 

@@ -1,4 +1,4 @@
-import 'package:coinly/app/theme/app_colors.dart';
+﻿import 'package:coinly/app/theme/app_colors.dart';
 import 'package:coinly/core/constants/transaction_categories.dart';
 import 'package:coinly/core/widgets/app_toast.dart';
 import 'package:coinly/core/widgets/app_top_app_bar.dart';
@@ -113,7 +113,7 @@ class CategoriesPage extends StatelessWidget {
     final repository = context.read<CategoriesRepository>();
 
     return Scaffold(
-      appBar: const AppTopAppBar(title: 'Manage Categories'),
+      appBar: const AppTopAppBar(title: 'Manage Categories', showBackButton: false),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openCategoryEditor(context),
         icon: const Icon(Icons.add_rounded),
@@ -667,3 +667,4 @@ class _CategoryEditorResult {
   final TransactionType type;
   final String iconKey;
 }
+

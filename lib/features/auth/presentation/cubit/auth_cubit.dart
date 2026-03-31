@@ -13,12 +13,7 @@ class AuthCubit extends Cubit<AuthState> {
   AuthCubit({required AuthRepository authRepository})
     : _authRepository = authRepository,
       super(
-        AuthState(
-          status: authRepository.currentUser == null
-              ? AuthStatus.unauthenticated
-              : AuthStatus.authenticated,
-          user: authRepository.currentUser,
-        ),
+        const AuthState(status: AuthStatus.checking),
       ) {
     _subscription = _authRepository.authStateChanges().listen(_onAuthChanged);
   }
@@ -178,5 +173,6 @@ class AuthCubit extends Cubit<AuthState> {
     return super.close();
   }
 }
+
 
 

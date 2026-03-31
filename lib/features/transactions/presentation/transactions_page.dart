@@ -1,4 +1,4 @@
-import 'package:coinly/app/theme/app_colors.dart';
+﻿import 'package:coinly/app/theme/app_colors.dart';
 import 'package:coinly/core/utils/currency_formatter.dart';
 import 'package:coinly/core/widgets/app_top_app_bar.dart';
 import 'package:coinly/core/widgets/app_confirm_dialog.dart';
@@ -102,7 +102,7 @@ class _TransactionsViewState extends State<_TransactionsView> {
         context.read<TransactionsPageCubit>().clearError();
       },
       child: Scaffold(
-        appBar: const AppTopAppBar(title: 'All Transactions'),
+        appBar: const AppTopAppBar(title: 'All Transactions', showBackButton: false),
         body: BlocBuilder<TransactionsPageCubit, TransactionsPageState>(
           builder: (context, state) {
             if (state.isInitialLoading) {
@@ -249,3 +249,4 @@ class _TransactionsViewState extends State<_TransactionsView> {
     );
   }
 }
+

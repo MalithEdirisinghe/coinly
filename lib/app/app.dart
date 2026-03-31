@@ -1,4 +1,4 @@
-import 'package:coinly/app/theme/app_theme.dart';
+﻿import 'package:coinly/app/theme/app_theme.dart';
 import 'package:coinly/app/theme/theme_cubit.dart';
 import 'package:coinly/app/theme/theme_preferences.dart';
 import 'package:coinly/features/auth/data/auth_repository.dart';
@@ -144,6 +144,11 @@ class _AuthGate extends StatelessWidget {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
         final user = state.user;
+
+        if (state.status == AuthStatus.checking) {
+          return const _AnimatedSplashPage();
+        }
+
         if (state.status == AuthStatus.authenticated && user != null) {
           if (!user.hasSelectedCurrency) {
             return CurrencySetupPage(user: user);
@@ -194,3 +199,5 @@ class _FirebaseSetupPage extends StatelessWidget {
     );
   }
 }
+
+

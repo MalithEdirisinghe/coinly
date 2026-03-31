@@ -1,4 +1,4 @@
-import 'package:coinly/app/theme/app_colors.dart';
+﻿import 'package:coinly/app/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class AppTopAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -6,10 +6,12 @@ class AppTopAppBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     required this.title,
     this.centerTitle = true,
+    this.showBackButton = true,
   });
 
   final String title;
   final bool centerTitle;
+  final bool showBackButton;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -22,12 +24,14 @@ class AppTopAppBar extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: false,
       titleSpacing: 0,
       centerTitle: centerTitle,
-      leading: IconButton(
-        onPressed: () => Navigator.of(context).maybePop(),
-        icon: const Icon(Icons.arrow_back_ios_new_rounded),
-        tooltip: 'Back',
-      ),
-      actions: const [SizedBox(width: 48)],
+      leading: showBackButton
+          ? IconButton(
+              onPressed: () => Navigator.of(context).maybePop(),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded),
+              tooltip: 'Back',
+            )
+          : const SizedBox.shrink(),
+      actions: [SizedBox(width: showBackButton ? 48 : 16)],
       title: Text(
         title,
         style: TextStyle(
